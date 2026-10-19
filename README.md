@@ -11,8 +11,11 @@ A minimal, read-only Markdown viewer for macOS. One file per window, a solid bac
 
 ## Install
 
-Download the `.dmg` from the [latest release](https://github.com/timothee-faget/mdr/releases/latest).
-Builds are not signed: the first time, right-click `mdr.app` → **Open**.
+1. Download `mdr_<version>_universal.dmg` from the [latest release](https://github.com/timothee-faget/mdr/releases/latest) (Apple Silicon and Intel).
+2. Open it and drag **mdr** to **Applications**.
+3. mdr is not signed with an Apple Developer ID, so macOS blocks its first launch. Allow it once, either:
+   - open mdr, dismiss the warning, then go to **System Settings › Privacy & Security** and click **Open Anyway** next to the message about mdr;
+   - or run `xattr -dr com.apple.quarantine /Applications/mdr.app` in a terminal.
 
 ## Development
 
