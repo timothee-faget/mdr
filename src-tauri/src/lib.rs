@@ -23,7 +23,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(documents::Paths::default())
-        .manage(config::load())
+        .manage(config::Config::load())
         .manage(watch::Watchers::default())
         .menu(menu)
         .on_menu_event(|app, event| {
@@ -51,6 +51,7 @@ pub fn run() {
             }
         }
         RunEvent::Ready => {
+            app.manage(watch_config(app));
             let paths = pending.take().unwrap_or_default();
             if paths.is_empty() {
                 documents::open_empty(app);
@@ -99,6 +100,30 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         )?;
     }
     Ok(menu)
+}
+
+/// Kept alive by the app state: dropping it would stop the watch.
+struct ConfigWatcher {
+    _watcher: Option<watch::Watcher>,
+}
+
+/// Restyles every window when the config file changes.
+fn watch_config(app: &AppHandle) -> ConfigWatcher {
+    let Some(path) = config::path() else {
+        return ConfigWatcher { _watcher: None };
+    };
+    // The directory must exist for its future config file to be noticed.
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+
+    let app = app.clone();
+    let watcher = watch::on_change(&path, move || {
+        if let Some(style) = app.state::<config::Config>().reload() {
+            documents::restyle(&app, &style);
+        }
+    });
+    ConfigWatcher { _watcher: watcher }
 }
 
 /// Files passed to the binary itself (`target/release/mdr file.md`).

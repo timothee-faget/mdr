@@ -51,6 +51,12 @@ async function render({ reload }) {
 
 await render({ reload: false });
 
+// Sent by documents.rs (restyle) when the config file changes: replaces the
+// variables injected by the init script (config.rs).
+window.__TAURI__.event.listen("config-changed", ({ payload }) => {
+  document.getElementById("config").textContent = payload;
+});
+
 // Sent by watch.rs when the file changes on disk.
 window.__TAURI__.webviewWindow
   .getCurrentWebviewWindow()
