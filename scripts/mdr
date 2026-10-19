@@ -1,0 +1,3 @@
+#!/bin/sh
+# Open Markdown files in mdr.app from the terminal.
+exec open -a mdr "$@"

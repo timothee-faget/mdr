@@ -1,0 +1,25 @@
+name: Bug report
+description: Something renders or behaves incorrectly
+labels: ["type:bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Attach or paste a minimal Markdown file if rendering is involved.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: mdr and macOS versions
+      placeholder: mdr 0.1.0, macOS 26.5
+    validations:
+      required: true

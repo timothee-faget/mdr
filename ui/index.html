@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>mdr</title>
+    <style>
+      :root {
+        --bg: #fbfaf7;
+        --fg: #1f1f1f;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1c1c1e;
+          --fg: #e6e6e6;
+        }
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--fg);
+        font: 16px/1.6 -apple-system, system-ui, sans-serif;
+      }
+    </style>
+  </head>
+  <body></body>
+</html>
