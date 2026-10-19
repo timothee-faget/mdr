@@ -8,5 +8,5 @@ input_file: src-tauri/tests/fixtures/raw_html.md
 <p>Hidden <strong>content</strong>.</p>
 </details>
 <p>Press <kbd>⌘</kbd> + <kbd>F</kbd>.</p>
-<p align="center"><img src="logo.png" alt="Logo" width="120"></p>
+<p align="center"><img src="asset://localhost/%2Fdocs%2Flogo.png" alt="Logo" width="120"></p>
 <div class="note" id="custom">A div</div>

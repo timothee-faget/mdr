@@ -4,7 +4,7 @@ expression: to_html(&markdown)
 input_file: src-tauri/tests/fixtures/malicious.md
 ---
 
-<img src="x">
+<img src="asset://localhost/%2Fdocs%2Fx">
 <p><a rel="noopener noreferrer">click</a></p>
 <p><a rel="noopener noreferrer">raw link</a></p>
 

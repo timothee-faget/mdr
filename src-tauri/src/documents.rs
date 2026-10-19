@@ -2,6 +2,7 @@
 
 use std::{
     collections::HashMap,
+    ffi::OsStr,
     fs,
     path::{Path, PathBuf},
     sync::{
@@ -16,6 +17,7 @@ use tauri::{
     WebviewWindowBuilder,
 };
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_opener::OpenerExt;
 
 use crate::{config::Style, render};
 
@@ -124,12 +126,72 @@ pub async fn get_document(
     };
     let title = file_name(&path);
     let bytes = fs::read(&path).map_err(|error| format!("Can't open {title}: {error}"))?;
+    let base = base_dir(&path);
+
+    // Lets the page load the document's images, see `render::image_source`.
+    if let Err(error) = window.asset_protocol_scope().allow_directory(base, true) {
+        eprintln!("mdr: can't allow images from {}: {error}", base.display());
+    }
 
     Ok(Some(Document {
-        html: render::to_html(&String::from_utf8_lossy(&bytes)),
+        html: render::to_html(&String::from_utf8_lossy(&bytes), base),
         title,
         path,
     }))
+}
+
+/// Follows a link clicked in the document. Web and mail links open in the
+/// default app, Markdown files in mdr, anything else is ignored.
+#[tauri::command]
+pub async fn follow_link(app: AppHandle, window: WebviewWindow, href: String) {
+    let Some(path) = app.state::<Paths>().get(window.label()) else {
+        return;
+    };
+    match classify(base_dir(&path), &href) {
+        Link::Web(url) => {
+            if let Err(error) = app.opener().open_url(&url, None::<&str>) {
+                eprintln!("mdr: can't open {url}: {error}");
+            }
+        }
+        Link::Document(path) => open(&app, &path),
+        Link::Ignored => {}
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum Link {
+    Web(String),
+    Document(PathBuf),
+    Ignored,
+}
+
+fn classify(base: &Path, href: &str) -> Link {
+    let href = href.trim();
+    let lowercase = href.to_ascii_lowercase();
+    if ["http:", "https:", "mailto:"]
+        .iter()
+        .any(|scheme| lowercase.starts_with(scheme))
+    {
+        return Link::Web(href.to_owned());
+    }
+    match render::local_path(base, href) {
+        Some(path) if is_markdown(&path) => Link::Document(path),
+        _ => Link::Ignored,
+    }
+}
+
+fn is_markdown(path: &Path) -> bool {
+    path.extension()
+        .and_then(OsStr::to_str)
+        .is_some_and(|extension| {
+            EXTENSIONS
+                .iter()
+                .any(|known| known.eq_ignore_ascii_case(extension))
+        })
+}
+
+fn base_dir(path: &Path) -> &Path {
+    path.parent().unwrap_or(path)
 }
 
 fn is_empty(app: &AppHandle, window: &WebviewWindow) -> bool {
@@ -158,7 +220,9 @@ fn build_window(app: &AppHandle, label: &str, title: &str) {
         .title_bar_style(TitleBarStyle::Overlay)
         .hidden_title(true)
         .theme(style.appearance)
-        .initialization_script(style.init_script());
+        .initialization_script(style.init_script())
+        // Links are handled by `follow_link`: the window never leaves the app.
+        .on_navigation(|url| url.scheme() == "tauri");
     if let Some(position) = cascade_position(app) {
         builder = builder.position(position.x, position.y);
     }
@@ -264,6 +328,43 @@ mod tests {
 
         assert!(path.is_absolute());
         assert_eq!(file_name(&path), "does-not-exist.md");
+    }
+
+    #[test]
+    fn links_are_classified() {
+        let base = Path::new("/docs");
+
+        for (href, expected) in [
+            (
+                "https://example.com",
+                Link::Web("https://example.com".to_owned()),
+            ),
+            (
+                "HTTP://example.com",
+                Link::Web("HTTP://example.com".to_owned()),
+            ),
+            (
+                "mailto:me@example.com",
+                Link::Web("mailto:me@example.com".to_owned()),
+            ),
+            (
+                "other.md#intro",
+                Link::Document(PathBuf::from("/docs/other.md")),
+            ),
+            ("../README.MD", Link::Document(PathBuf::from("/README.MD"))),
+            (
+                "notes.markdown",
+                Link::Document(PathBuf::from("/docs/notes.markdown")),
+            ),
+            ("LICENSE", Link::Ignored),
+            ("image.png", Link::Ignored),
+            ("#section", Link::Ignored),
+            ("file:///etc/passwd", Link::Ignored),
+            ("javascript:alert(1)", Link::Ignored),
+            ("ftp://example.com/a.md", Link::Ignored),
+        ] {
+            assert_eq!(classify(base, href), expected, "{href}");
+        }
     }
 
     #[test]

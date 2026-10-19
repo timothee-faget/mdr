@@ -20,6 +20,7 @@ const OPEN_MENU_ID: &str = "open";
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .manage(documents::Paths::default())
         .manage(config::load())
         .menu(menu)
@@ -28,7 +29,10 @@ pub fn run() {
                 documents::pick(app);
             }
         })
-        .invoke_handler(tauri::generate_handler![documents::get_document])
+        .invoke_handler(tauri::generate_handler![
+            documents::get_document,
+            documents::follow_link
+        ])
         .build(tauri::generate_context!())
         .expect("error while building mdr");
 
