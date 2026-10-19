@@ -7,4 +7,4 @@ input_file: src-tauri/tests/fixtures/inline.md
 <p>An autolink: <a href="https://example.com/path?q=1" rel="noopener noreferrer">https://example.com/path?q=1</a> and <a href="mailto:me@example.com" rel="noopener noreferrer">mailto:me@example.com</a>.</p>
 <p>Hard break with two spaces<br>
 next line.</p>
-<p>An image: <img src="images/pic.png" alt="alt text"></p>
+<p>An image: <img src="asset://localhost/%2Fdocs%2Fimages%2Fpic.png" alt="alt text"></p>

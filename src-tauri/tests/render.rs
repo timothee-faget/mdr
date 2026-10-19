@@ -1,6 +1,11 @@
-use std::{fs, time::Instant};
+use std::{fs, path::Path, time::Instant};
 
-use mdr_lib::render::to_html;
+use mdr_lib::render;
+
+/// A fixed base keeps the rewritten image URLs in snapshots machine-independent.
+fn to_html(markdown: &str) -> String {
+    render::to_html(markdown, Path::new("/docs"))
+}
 
 #[test]
 fn fixtures() {

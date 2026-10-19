@@ -9,6 +9,20 @@ function showMessage(text) {
   main.replaceChildren(message);
 }
 
+// Links never navigate the window: anchors scroll, everything else is
+// handed to Rust (documents.rs, follow_link).
+document.addEventListener("click", (event) => {
+  const link = event.target.closest("a[href]");
+  if (!link) return;
+  event.preventDefault();
+  const href = link.getAttribute("href");
+  if (href.startsWith("#")) {
+    document.getElementById(decodeURIComponent(href.slice(1)))?.scrollIntoView();
+  } else {
+    invoke("follow_link", { href });
+  }
+});
+
 try {
   const doc = await invoke("get_document");
   if (doc) {
