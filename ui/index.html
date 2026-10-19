@@ -3,48 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>mdr</title>
-    <style>
-      :root {
-        --bg: #fbfaf7;
-        --fg: #1f1f1f;
-        --muted: #8a8a8a;
-        color-scheme: light dark;
-      }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #1c1c1e;
-          --fg: #e6e6e6;
-        }
-      }
-      html,
-      body {
-        margin: 0;
-        height: 100%;
-        background: var(--bg);
-        color: var(--fg);
-        font: 16px/1.6 -apple-system, system-ui, sans-serif;
-      }
-      main {
-        max-width: 70ch;
-        margin: 0 auto;
-        padding: 40px 24px;
-      }
-      /* The title bar is hidden: this strip keeps the window draggable. */
-      .titlebar {
-        position: fixed;
-        inset: 0 0 auto;
-        height: 28px;
-        z-index: 1;
-      }
-      .message {
-        position: fixed;
-        inset: 0;
-        display: grid;
-        place-items: center;
-        margin: 0;
-        color: var(--muted);
-      }
-    </style>
+    <link rel="stylesheet" href="style.css" />
     <script type="module" src="main.js"></script>
   </head>
   <body>

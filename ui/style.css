@@ -1,0 +1,338 @@
+/* Every color and measure comes from these variables, so that the config
+   file (#6) can override them. Keep --bg in sync with documents.rs. */
+:root {
+  --bg: #fbfaf7;
+  --fg: #1f1f1f;
+  --muted: #6b6b6b;
+  --accent: #1f5fbf;
+  --code-bg: #f0eee8;
+  --border: #e2dfd7;
+  --font: -apple-system, system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --size: 16px;
+  --line-height: 1.6;
+  --width: 70ch;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --fg: #e4e4e6;
+    --muted: #9b9ba1;
+    --accent: #6eaaff;
+    --code-bg: #2a2a2d;
+    --border: #3a3a3e;
+  }
+}
+
+/* Page */
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: var(--size);
+  line-height: var(--line-height);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+main {
+  max-width: var(--width);
+  margin: 0 auto;
+  /* The top padding clears the traffic lights. */
+  padding: 56px 28px 80px;
+  overflow-wrap: break-word;
+}
+
+main > :first-child {
+  margin-top: 0;
+}
+
+main > :last-child {
+  margin-bottom: 0;
+}
+
+/* The title bar is hidden: this strip keeps the window draggable. */
+.titlebar {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 28px;
+  z-index: 1;
+}
+
+/* Empty state and errors. */
+.message {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0 28px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Blocks */
+
+p,
+ul,
+ol,
+blockquote,
+pre,
+table,
+details,
+figure {
+  margin: 0 0 1em;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 1.8em 0 0.6em;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+h1 {
+  font-size: 2em;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: 1.5em;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-size: 1.25em;
+}
+
+h4 {
+  font-size: 1em;
+}
+
+h5 {
+  font-size: 0.875em;
+}
+
+h6 {
+  font-size: 0.875em;
+  color: var(--muted);
+}
+
+hr {
+  margin: 2.5em 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+blockquote {
+  padding: 0 0 0 1em;
+  border-left: 3px solid var(--border);
+  color: var(--muted);
+}
+
+blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Lists */
+
+ul,
+ol {
+  padding-left: 1.6em;
+}
+
+li + li,
+li > ul,
+li > ol {
+  margin-top: 0.25em;
+}
+
+li > ul,
+li > ol {
+  margin-bottom: 0;
+}
+
+li > p {
+  margin-bottom: 0.5em;
+}
+
+li:has(> input[type="checkbox"]) {
+  list-style: none;
+}
+
+/* Drawn by hand: WebKit greys out disabled checkboxes inconsistently. */
+li > input[type="checkbox"] {
+  appearance: none;
+  position: relative;
+  width: 0.95em;
+  height: 0.95em;
+  margin: 0 0.5em 0 -1.45em;
+  border: 1.5px solid var(--muted);
+  border-radius: 4px;
+  vertical-align: -0.12em;
+}
+
+li > input[type="checkbox"]:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+li > input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 0.26em;
+  top: 0.08em;
+  width: 0.2em;
+  height: 0.42em;
+  border: solid var(--bg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Inline */
+
+a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* Heading anchors and footnote links are navigation, not prose. */
+h1 a.anchor,
+h2 a.anchor,
+h3 a.anchor,
+h4 a.anchor,
+h5 a.anchor,
+h6 a.anchor,
+.footnote-ref a,
+.footnote-backref {
+  text-decoration: none;
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--mono);
+}
+
+code {
+  padding: 0.12em 0.35em;
+  border-radius: 4px;
+  background: var(--code-bg);
+  font-size: 0.875em;
+}
+
+kbd {
+  padding: 0.05em 0.4em;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--code-bg);
+  font-size: 0.8em;
+}
+
+mark {
+  background: color-mix(in srgb, #ffd23f 45%, transparent);
+  color: inherit;
+}
+
+/* Code blocks */
+
+pre {
+  padding: 0.9em 1.1em;
+  border-radius: 6px;
+  background: var(--code-bg);
+  font-size: 0.85em;
+  line-height: 1.5;
+  tab-size: 4;
+  overflow-x: auto;
+}
+
+pre code {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-size: inherit;
+}
+
+/* Tables: wide tables scroll horizontally on their own. */
+
+table {
+  display: block;
+  max-width: fit-content;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+
+th,
+td {
+  padding: 0.4em 0.9em;
+  border: 1px solid var(--border);
+}
+
+th {
+  font-weight: 600;
+  background: var(--code-bg);
+}
+
+/* Details */
+
+details {
+  padding: 0.5em 0.9em;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+summary {
+  font-weight: 600;
+  cursor: default;
+}
+
+details[open] > summary {
+  margin-bottom: 0.6em;
+}
+
+details > :last-child {
+  margin-bottom: 0;
+}
+
+/* Footnotes */
+
+.footnote-ref {
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+section.footnotes {
+  margin-top: 3em;
+  padding-top: 1em;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.875em;
+}
+
+section.footnotes p {
+  margin-bottom: 0.4em;
+}
