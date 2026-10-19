@@ -17,6 +17,7 @@ ammonia = "4.2.4"
 comrak = { version = "0.56.0", default-features = false }
 serde = { version = "1.0.229", features = ["derive"] }
 tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
 
 [dev-dependencies]
 insta = { version = "1.49.0", features = ["glob"] }
