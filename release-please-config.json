@@ -28,13 +28,22 @@
       "hidden": true
     }
   ],
-  "plugins": [
-    "cargo-workspace"
-  ],
   "packages": {
-    "src-tauri": {
-      "release-type": "rust",
-      "component": "mdr"
+    ".": {
+      "release-type": "simple",
+      "component": "mdr",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "src-tauri/Cargo.toml",
+          "jsonpath": "$.package.version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.lock",
+          "jsonpath": "$.package[?(@.name=='mdr')].version"
+        }
+      ]
     }
   }
 }
