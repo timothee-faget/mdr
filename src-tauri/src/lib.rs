@@ -1,6 +1,7 @@
 mod config;
 mod documents;
 pub mod render;
+mod watch;
 
 use std::path::PathBuf;
 
@@ -23,6 +24,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(documents::Paths::default())
         .manage(config::load())
+        .manage(watch::Watchers::default())
         .menu(menu)
         .on_menu_event(|app, event| {
             if event.id() == OPEN_MENU_ID {
@@ -68,7 +70,10 @@ pub fn run() {
             ..
         } => documents::open_empty(app),
         RunEvent::WindowEvent { label, event, .. } => match event {
-            WindowEvent::Destroyed => app.state::<documents::Paths>().remove(&label),
+            WindowEvent::Destroyed => {
+                app.state::<watch::Watchers>().stop(&label);
+                app.state::<documents::Paths>().remove(&label);
+            }
             WindowEvent::ThemeChanged(theme) => {
                 if let Some(window) = app.get_webview_window(&label) {
                     documents::paint_background(&window, theme);

@@ -23,15 +23,35 @@ document.addEventListener("click", (event) => {
   }
 });
 
-try {
-  const doc = await invoke("get_document");
-  if (doc) {
-    document.title = doc.title;
-    // Sanitized in Rust (render.rs).
-    main.innerHTML = doc.html;
-  } else {
-    showMessage("Open a Markdown file (⌘O)");
+async function render({ reload }) {
+  let doc;
+  try {
+    doc = await invoke("get_document");
+  } catch (error) {
+    // A deleted or half-written file: keep showing the last version.
+    if (!reload || !main.firstElementChild) showMessage(error);
+    return;
   }
-} catch (error) {
-  showMessage(error);
+  if (!doc) {
+    showMessage("Open a Markdown file (⌘O)");
+    return;
+  }
+
+  const page = document.documentElement;
+  const top = page.scrollTop;
+  const atEnd = top > 0 && top + innerHeight >= page.scrollHeight - 2;
+
+  document.title = doc.title;
+  // Sanitized in Rust (render.rs).
+  main.innerHTML = doc.html;
+
+  // Edits elsewhere in the file don't move the view; at the end, follow it.
+  if (reload) page.scrollTop = atEnd ? page.scrollHeight : top;
 }
+
+await render({ reload: false });
+
+// Sent by watch.rs when the file changes on disk.
+window.__TAURI__.webviewWindow
+  .getCurrentWebviewWindow()
+  .listen("document-changed", () => render({ reload: true }));
