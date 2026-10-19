@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.0](https://github.com/timothee-faget/mdr/compare/v0.2.0...v1.0.0) (2026-10-19)
+
+
+### Miscellaneous
+
+* app icon ([#41](https://github.com/timothee-faget/mdr/issues/41)) ([39b0034](https://github.com/timothee-faget/mdr/commit/39b00344f32bbb67cc51127379f029dae1b64fa6))
+* performance budget ([#43](https://github.com/timothee-faget/mdr/issues/43)) ([814fb11](https://github.com/timothee-faget/mdr/commit/814fb118d6086245ba44bd76af486d1df145f39f))
+* release 1.0.0 ([#45](https://github.com/timothee-faget/mdr/issues/45)) ([4d98eda](https://github.com/timothee-faget/mdr/commit/4d98edaed115f5979914d018e27fd6448885a9a9))
+
 ## [0.2.0](https://github.com/timothee-faget/mdr/compare/v0.1.0...v0.2.0) (2026-10-19)
 
 
