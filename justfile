@@ -26,6 +26,11 @@ test:
 deny:
     cargo deny check
 
+# Measure startup time, memory and size of a release build (opens mdr windows)
+bench runs="10":
+    cargo tauri build --bundles app
+    scripts/bench.sh {{ runs }}
+
 # Build the release .app and .dmg
 build:
     cargo tauri build
