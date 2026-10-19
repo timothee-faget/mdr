@@ -7,6 +7,7 @@
       :root {
         --bg: #fbfaf7;
         --fg: #1f1f1f;
+        --muted: #8a8a8a;
         color-scheme: light dark;
       }
       @media (prefers-color-scheme: dark) {
@@ -23,7 +24,23 @@
         color: var(--fg);
         font: 16px/1.6 -apple-system, system-ui, sans-serif;
       }
+      main {
+        max-width: 70ch;
+        margin: 0 auto;
+        padding: 40px 24px;
+      }
+      .message {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        margin: 0;
+        color: var(--muted);
+      }
     </style>
+    <script type="module" src="main.js"></script>
   </head>
-  <body></body>
+  <body>
+    <main></main>
+  </body>
 </html>
