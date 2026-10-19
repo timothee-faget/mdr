@@ -1,0 +1,28 @@
+---
+source: src-tauri/src/config.rs
+expression: "parse(\"\").0.css"
+---
+:root {
+  color-scheme: light dark;
+  --font: -apple-system, system-ui, sans-serif;
+  --mono: ui-monospace, SF Mono, Menlo, monospace;
+  --size: 16px;
+  --line-height: 1.6;
+  --width: 70ch;
+  --bg: #fbfaf7;
+  --fg: #1f1f1f;
+  --muted: #6b6b6b;
+  --accent: #1f5fbf;
+  --code-bg: #f0eee8;
+  --border: #e2dfd7;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --fg: #e4e4e6;
+    --muted: #9b9ba1;
+    --accent: #6eaaff;
+    --code-bg: #2a2a2d;
+    --border: #3a3a3e;
+  }
+}

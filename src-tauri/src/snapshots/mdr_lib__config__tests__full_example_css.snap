@@ -1,0 +1,28 @@
+---
+source: src-tauri/src/config.rs
+expression: style.css
+---
+:root {
+  color-scheme: light dark;
+  --font: Iowan Old Style, Georgia, serif;
+  --mono: JetBrains Mono, monospace;
+  --size: 18px;
+  --line-height: 1.7;
+  --width: 680px;
+  --bg: #f7f3ea;
+  --fg: #1f1f1f;
+  --muted: #6b6b6b;
+  --accent: #9c4a1a;
+  --code-bg: #f0eee8;
+  --border: #e2dfd7;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --fg: #e4e4e6;
+    --muted: #9b9ba1;
+    --accent: #6eaaff;
+    --code-bg: #2a2a2d;
+    --border: #3a3a3e;
+  }
+}
