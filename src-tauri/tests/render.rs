@@ -53,6 +53,6 @@ fn renders_one_megabyte_under_150ms() {
     let html = to_html(&markdown);
     let elapsed = start.elapsed();
 
-    assert!(!html.is_empty());
+    assert_ne!(html, "");
     assert!(elapsed.as_millis() < 150, "rendered 1 MB in {elapsed:?}");
 }
