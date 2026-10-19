@@ -6,15 +6,7 @@
     "frontendDist": "../ui"
   },
   "app": {
-    "windows": [
-      {
-        "title": "mdr",
-        "width": 760,
-        "height": 900,
-        "titleBarStyle": "Overlay",
-        "hiddenTitle": true
-      }
-    ],
+    "withGlobalTauri": true,
     "security": {
       "csp": "default-src 'self'; img-src 'self' asset: data:; style-src 'self' 'unsafe-inline'"
     }

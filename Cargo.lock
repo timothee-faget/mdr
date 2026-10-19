@@ -1919,6 +1919,7 @@ dependencies = [
  "ammonia",
  "comrak",
  "insta",
+ "serde",
  "tauri",
  "tauri-build",
 ]
