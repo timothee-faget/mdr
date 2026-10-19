@@ -1,3 +1,4 @@
+mod config;
 mod documents;
 pub mod render;
 
@@ -20,6 +21,7 @@ pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(documents::Paths::default())
+        .manage(config::load())
         .menu(menu)
         .on_menu_event(|app, event| {
             if event.id() == OPEN_MENU_ID {

@@ -13,11 +13,11 @@ use std::{
 use serde::Serialize;
 use tauri::{
     AppHandle, LogicalPosition, Manager, State, Theme, TitleBarStyle, WebviewUrl, WebviewWindow,
-    WebviewWindowBuilder, window::Color,
+    WebviewWindowBuilder,
 };
 use tauri_plugin_dialog::DialogExt;
 
-use crate::render;
+use crate::{config::Style, render};
 
 const EXTENSIONS: &[&str] = &["md", "markdown", "mdown", "mkd"];
 
@@ -109,11 +109,7 @@ pub fn pick(app: &AppHandle) {
 /// Paints the window background in the theme's color, so no white flashes
 /// before the page loads or when scrolling past its edges.
 pub fn paint_background(window: &WebviewWindow, theme: Theme) {
-    // Keep in sync with `--bg` in ui/index.html, until the config (#6) drives both.
-    let color = match theme {
-        Theme::Dark => Color(0x1c, 0x1c, 0x1e, 0xff),
-        _ => Color(0xfb, 0xfa, 0xf7, 0xff),
-    };
+    let color = window.state::<Style>().background(theme);
     let _ = window.set_background_color(Some(color));
 }
 
@@ -155,11 +151,14 @@ fn show_in(app: &AppHandle, window: &WebviewWindow, path: &Path) {
 }
 
 fn build_window(app: &AppHandle, label: &str, title: &str) {
+    let style = app.state::<Style>();
     let mut builder = WebviewWindowBuilder::new(app, label, WebviewUrl::default())
         .title(title)
         .inner_size(760.0, 900.0)
         .title_bar_style(TitleBarStyle::Overlay)
-        .hidden_title(true);
+        .hidden_title(true)
+        .theme(style.appearance)
+        .initialization_script(style.init_script());
     if let Some(position) = cascade_position(app) {
         builder = builder.position(position.x, position.y);
     }
