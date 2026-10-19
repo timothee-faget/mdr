@@ -16,23 +16,33 @@ jobs:
       tag: ${{ steps.release.outputs.tag_name }}
     steps:
       - id: release
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
+        with:
+          # Not GITHUB_TOKEN: pull requests it opens don't trigger CI, so the
+          # release PR could never pass the required checks.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
   bundle:
     needs: release-please
     if: needs.release-please.outputs.created == 'true'
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@v2
         with:
           tool: tauri-cli
-      - uses: tauri-apps/tauri-action@v0
+      - id: release
+        run: echo "id=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json databaseId --jq .databaseId)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.release-please.outputs.tag }}
+      - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tauriScript: cargo tauri
-          tagName: ${{ needs.release-please.outputs.tag }}
+          # Only attaches the .dmg: the release and its notes come from release-please.
+          releaseId: ${{ steps.release.outputs.id }}
           args: --target universal-apple-darwin
