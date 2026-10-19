@@ -15,6 +15,8 @@ try {
     document.title = doc.title;
     // Sanitized in Rust (render.rs).
     main.innerHTML = doc.html;
+  } else {
+    showMessage("Open a Markdown file (⌘O)");
   }
 } catch (error) {
   showMessage(error);

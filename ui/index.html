@@ -29,6 +29,13 @@
         margin: 0 auto;
         padding: 40px 24px;
       }
+      /* The title bar is hidden: this strip keeps the window draggable. */
+      .titlebar {
+        position: fixed;
+        inset: 0 0 auto;
+        height: 28px;
+        z-index: 1;
+      }
       .message {
         position: fixed;
         inset: 0;
@@ -41,6 +48,7 @@
     <script type="module" src="main.js"></script>
   </head>
   <body>
+    <div class="titlebar" data-tauri-drag-region></div>
     <main></main>
   </body>
 </html>

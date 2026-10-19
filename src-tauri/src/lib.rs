@@ -3,7 +3,12 @@ pub mod render;
 
 use std::path::PathBuf;
 
-use tauri::{Manager, RunEvent, WindowEvent};
+use tauri::{
+    AppHandle, Manager, RunEvent, WindowEvent,
+    menu::{Menu, MenuItem, PredefinedMenuItem},
+};
+
+const OPEN_MENU_ID: &str = "open";
 
 /// Starts the app.
 ///
@@ -13,7 +18,14 @@ use tauri::{Manager, RunEvent, WindowEvent};
 /// `tauri.conf.json`.
 pub fn run() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .manage(documents::Paths::default())
+        .menu(menu)
+        .on_menu_event(|app, event| {
+            if event.id() == OPEN_MENU_ID {
+                documents::pick(app);
+            }
+        })
         .invoke_handler(tauri::generate_handler![documents::get_document])
         .build(tauri::generate_context!())
         .expect("error while building mdr");
@@ -39,13 +51,43 @@ pub fn run() {
                 documents::open(app, &path);
             }
         }
-        RunEvent::WindowEvent {
-            label,
-            event: WindowEvent::Destroyed,
+        // Like any Mac app, keep running when the last window closes.
+        // An explicit quit carries an exit code and goes through.
+        RunEvent::ExitRequested {
+            code: None, api, ..
+        } => api.prevent_exit(),
+        // Dock icon clicked while every window is closed.
+        RunEvent::Reopen {
+            has_visible_windows: false,
             ..
-        } => app.state::<documents::Paths>().remove(&label),
+        } => documents::open_empty(app),
+        RunEvent::WindowEvent { label, event, .. } => match event {
+            WindowEvent::Destroyed => app.state::<documents::Paths>().remove(&label),
+            WindowEvent::ThemeChanged(theme) => {
+                if let Some(window) = app.get_webview_window(&label) {
+                    documents::paint_background(&window, theme);
+                }
+            }
+            _ => {}
+        },
         _ => {}
     });
+}
+
+/// Tauri's default macOS menu, plus File › Open… (⌘O).
+fn menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
+    let menu = Menu::default(app)?;
+    // The default menu is: app name, File, Edit, View, Window, Help.
+    if let Some(file) = menu.items()?.get(1).and_then(|item| item.as_submenu()) {
+        file.insert_items(
+            &[
+                &MenuItem::with_id(app, OPEN_MENU_ID, "Open…", true, Some("CmdOrCtrl+O"))?,
+                &PredefinedMenuItem::separator(app)?,
+            ],
+            0,
+        )?;
+    }
+    Ok(menu)
 }
 
 /// Files passed to the binary itself (`target/release/mdr file.md`).
