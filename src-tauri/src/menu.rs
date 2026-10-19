@@ -21,6 +21,9 @@ const ZOOM_IN: &str = "zoom-in";
 const ZOOM_OUT: &str = "zoom-out";
 const RELOAD: &str = "reload";
 const OPEN_CONFIG: &str = "open-config";
+const FIND: &str = "find";
+const FIND_NEXT: &str = "find-next";
+const FIND_PREVIOUS: &str = "find-previous";
 
 /// Zoom steps, as in Safari.
 const ZOOM_LEVELS: &[f64] = &[
@@ -54,7 +57,7 @@ const CONFIG_TEMPLATE: &str = r##"# mdr configuration. Changes apply as soon as 
 "##;
 
 /// Menu items that need a document, disabled in empty windows.
-pub struct DocumentItems([MenuItem<Wry>; 2]);
+pub struct DocumentItems([MenuItem<Wry>; 5]);
 
 /// Zoom level of each window, by label. Missing means 1.
 #[derive(Default)]
@@ -77,6 +80,15 @@ pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
 
     let reveal = MenuItem::with_id(app, REVEAL, "Reveal in Finder", false, None::<&str>)?;
     let reload = MenuItem::with_id(app, RELOAD, "Reload", false, Some("CmdOrCtrl+R"))?;
+    let find = MenuItem::with_id(app, FIND, "Find…", false, Some("CmdOrCtrl+F"))?;
+    let find_next = MenuItem::with_id(app, FIND_NEXT, "Find Next", false, Some("CmdOrCtrl+G"))?;
+    let find_previous = MenuItem::with_id(
+        app,
+        FIND_PREVIOUS,
+        "Find Previous",
+        false,
+        Some("CmdOrCtrl+Shift+G"),
+    )?;
 
     let package = app.package_info();
     let about = AboutMetadata {
@@ -121,6 +133,10 @@ pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
         &[
             &PredefinedMenuItem::copy(app, None)?,
             &PredefinedMenuItem::select_all(app, None)?,
+            &separator()?,
+            &find,
+            &find_next,
+            &find_previous,
         ],
     )?;
     let view = Submenu::with_items(
@@ -153,7 +169,13 @@ pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     let help = Submenu::with_items(app, "Help", true, &[])?;
     help.set_as_help_menu_for_nsapp()?;
 
-    app.manage(DocumentItems([reveal, reload]));
+    app.manage(DocumentItems([
+        reveal,
+        reload,
+        find,
+        find_next,
+        find_previous,
+    ]));
     Menu::with_items(app, &[&app_menu, &file, &edit, &view, &window, &help])
 }
 
@@ -170,6 +192,9 @@ pub fn handle(app: &AppHandle, event: &MenuEvent) {
                 RELOAD => {
                     let _ = window.emit_to(window.label(), "document-changed", ());
                 }
+                FIND => find(&window, "open"),
+                FIND_NEXT => find(&window, "next"),
+                FIND_PREVIOUS => find(&window, "previous"),
                 ACTUAL_SIZE => zoom(app, &window, 0),
                 ZOOM_IN => zoom(app, &window, 1),
                 ZOOM_OUT => zoom(app, &window, -1),
@@ -185,6 +210,11 @@ pub fn update(app: &AppHandle, window: &WebviewWindow) {
     for item in &app.state::<DocumentItems>().0 {
         let _ = item.set_enabled(enabled);
     }
+}
+
+/// Opens the search bar or moves between matches (ui/search.js).
+fn find(window: &WebviewWindow, action: &str) {
+    let _ = window.emit_to(window.label(), "find", action);
 }
 
 /// Zooms the window one step in (`1`) or out (`-1`), or resets it (`0`).

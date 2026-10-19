@@ -47,6 +47,7 @@ async function render({ reload }) {
 
   // Edits elsewhere in the file don't move the view; at the end, follow it.
   if (reload) page.scrollTop = atEnd ? page.scrollHeight : top;
+  document.dispatchEvent(new Event("document-rendered"));
 }
 
 await render({ reload: false });
