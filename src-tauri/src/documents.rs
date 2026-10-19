@@ -21,7 +21,7 @@ use tauri_plugin_opener::OpenerExt;
 
 use crate::{
     config::{Config, Style},
-    render,
+    menu, render,
     watch::Watchers,
 };
 
@@ -209,8 +209,23 @@ fn base_dir(path: &Path) -> &Path {
     path.parent().unwrap_or(path)
 }
 
+/// The file shown by the window `label`, if any.
+pub fn path_of(app: &AppHandle, label: &str) -> Option<PathBuf> {
+    app.state::<Paths>().get(label)
+}
+
+/// Shows the window's document in the Finder.
+pub fn reveal(window: &WebviewWindow) {
+    let Some(path) = path_of(window.app_handle(), window.label()) else {
+        return;
+    };
+    if let Err(error) = window.opener().reveal_item_in_dir(&path) {
+        eprintln!("mdr: can't reveal {}: {error}", path.display());
+    }
+}
+
 fn is_empty(app: &AppHandle, window: &WebviewWindow) -> bool {
-    app.state::<Paths>().get(window.label()).is_none()
+    path_of(app, window.label()).is_none()
 }
 
 /// Loads `path` into an empty window, unless another window already shows it.
@@ -228,6 +243,7 @@ fn show_in(app: &AppHandle, window: &WebviewWindow, path: &Path) {
     // Not `window.reload()`: the page would get the CSS frozen in its init
     // script, outdated if the config changed since the window was created.
     let _ = window.emit_to(window.label(), "document-changed", ());
+    menu::update(app, window);
 }
 
 fn build_window(app: &AppHandle, label: &str, title: &str) {
@@ -261,7 +277,7 @@ fn cascade_position(app: &AppHandle) -> Option<LogicalPosition<f64>> {
     ))
 }
 
-fn focused_window(app: &AppHandle) -> Option<WebviewWindow> {
+pub fn focused_window(app: &AppHandle) -> Option<WebviewWindow> {
     app.webview_windows()
         .into_values()
         .find(|window| window.is_focused().unwrap_or(false))

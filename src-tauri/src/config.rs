@@ -480,8 +480,15 @@ impl std::fmt::Display for Rgba {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
+
+    /// The CSS of a config that must produce no warning.
+    pub(crate) fn css_of(source: &str) -> String {
+        let (style, warnings) = parse(source);
+        assert!(warnings.is_empty(), "{warnings:?}");
+        style.css
+    }
 
     #[test]
     fn empty_file_gives_defaults_without_warnings() {

@@ -1,16 +1,12 @@
 mod config;
 mod documents;
+mod menu;
 pub mod render;
 mod watch;
 
 use std::path::PathBuf;
 
-use tauri::{
-    AppHandle, Manager, RunEvent, WindowEvent,
-    menu::{Menu, MenuItem, PredefinedMenuItem},
-};
-
-const OPEN_MENU_ID: &str = "open";
+use tauri::{AppHandle, Manager, RunEvent, WindowEvent};
 
 /// Starts the app.
 ///
@@ -25,12 +21,9 @@ pub fn run() {
         .manage(documents::Paths::default())
         .manage(config::Config::load())
         .manage(watch::Watchers::default())
-        .menu(menu)
-        .on_menu_event(|app, event| {
-            if event.id() == OPEN_MENU_ID {
-                documents::pick(app);
-            }
-        })
+        .manage(menu::Zoom::default())
+        .menu(menu::build)
+        .on_menu_event(|app, event| menu::handle(app, &event))
         .invoke_handler(tauri::generate_handler![
             documents::get_document,
             documents::follow_link
@@ -73,7 +66,13 @@ pub fn run() {
         RunEvent::WindowEvent { label, event, .. } => match event {
             WindowEvent::Destroyed => {
                 app.state::<watch::Watchers>().stop(&label);
+                app.state::<menu::Zoom>().forget(&label);
                 app.state::<documents::Paths>().remove(&label);
+            }
+            WindowEvent::Focused(true) => {
+                if let Some(window) = app.get_webview_window(&label) {
+                    menu::update(app, &window);
+                }
             }
             WindowEvent::ThemeChanged(theme) => {
                 if let Some(window) = app.get_webview_window(&label) {
@@ -84,22 +83,6 @@ pub fn run() {
         },
         _ => {}
     });
-}
-
-/// Tauri's default macOS menu, plus File › Open… (⌘O).
-fn menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
-    let menu = Menu::default(app)?;
-    // The default menu is: app name, File, Edit, View, Window, Help.
-    if let Some(file) = menu.items()?.get(1).and_then(|item| item.as_submenu()) {
-        file.insert_items(
-            &[
-                &MenuItem::with_id(app, OPEN_MENU_ID, "Open…", true, Some("CmdOrCtrl+O"))?,
-                &PredefinedMenuItem::separator(app)?,
-            ],
-            0,
-        )?;
-    }
-    Ok(menu)
 }
 
 /// Kept alive by the app state: dropping it would stop the watch.
