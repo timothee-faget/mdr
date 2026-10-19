@@ -1,3 +1,15 @@
 #!/bin/sh
-# Open Markdown files in mdr.app from the terminal.
-exec open -a mdr "$@"
+# Opens Markdown files in mdr.app from the terminal: `mdr README.md docs/*.md`.
+# With no argument, just brings mdr to the front.
+
+error=$(open -a mdr "$@" 2>&1) && exit 0
+
+case $error in
+*"Unable to find application"*)
+    echo "mdr: mdr.app isn't installed. Get it from https://github.com/timothee-faget/mdr/releases/latest" >&2
+    ;;
+*)
+    echo "mdr: $error" >&2
+    ;;
+esac
+exit 1
