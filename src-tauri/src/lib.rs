@@ -1,5 +1,6 @@
 mod config;
 mod documents;
+mod highlight;
 mod menu;
 pub mod render;
 mod watch;

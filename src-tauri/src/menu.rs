@@ -54,6 +54,10 @@ const CONFIG_TEMPLATE: &str = r##"# mdr configuration. Changes apply as soon as 
 # accent = "#9c4a1a"
 # code_background = "#efe9dc"
 # border = "#e2dccd"
+# code_theme = "InspiredGitHub"   # code colors, also for built-in themes:
+#   InspiredGitHub, GitHub, Solarized (light), Solarized (dark), OneHalfLight,
+#   OneHalfDark, Nord, Dracula, gruvbox-light, gruvbox-dark, Catppuccin Latte,
+#   Catppuccin Mocha, Monokai Extended, TwoDark, zenburn…
 "##;
 
 /// Menu items that need a document, disabled in empty windows.

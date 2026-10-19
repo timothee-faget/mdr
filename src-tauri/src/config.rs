@@ -15,6 +15,8 @@ use std::{
 use serde::Deserialize;
 use tauri::{Theme, window::Color};
 
+use crate::highlight;
+
 /// The config file as written by the user. Every key is optional.
 #[derive(Deserialize, Default)]
 #[serde(default)]
@@ -24,7 +26,7 @@ struct File {
     dark_theme: Option<String>,
     font: Font,
     layout: Layout,
-    themes: HashMap<String, Colors<Option<String>>>,
+    themes: HashMap<String, ThemeTable>,
 }
 
 #[derive(Deserialize, Default, Clone, Copy)]
@@ -70,9 +72,22 @@ impl Default for Layout {
     }
 }
 
-/// A theme's colors: `Option<String>` as written, `Rgba` once resolved.
-#[derive(Deserialize, Default, Clone, Copy, Debug, PartialEq)]
+/// A `[themes.<name>]` table as written. Every key is optional.
+#[derive(Deserialize, Default)]
 #[serde(default)]
+struct ThemeTable {
+    background: Option<String>,
+    text: Option<String>,
+    muted: Option<String>,
+    accent: Option<String>,
+    code_background: Option<String>,
+    border: Option<String>,
+    /// One of the bundled syntax highlighting themes (`highlight.rs`).
+    code_theme: Option<String>,
+}
+
+/// A resolved theme's colors.
+#[derive(Clone, Copy, Debug, PartialEq)]
 struct Colors<T> {
     background: T,
     text: T,
@@ -109,6 +124,16 @@ const NIGHT: Colors<Rgba> = Colors {
     border: Rgba(0x3a, 0x3a, 0x3e, 0xff),
 };
 
+/// The code theme of each built-in theme, also the base of custom themes
+/// (through `paper`).
+fn default_code_theme(name: &str) -> &'static str {
+    match name {
+        "sepia" => "Solarized (light)",
+        "night" => "OneHalfDark",
+        _ => "InspiredGitHub",
+    }
+}
+
 fn built_in(name: &str) -> Option<Colors<Rgba>> {
     match name {
         "paper" => Some(PAPER),
@@ -125,7 +150,10 @@ pub struct Style {
     pub appearance: Option<Theme>,
     light: Colors<Rgba>,
     dark: Colors<Rgba>,
+    /// The CSS variables.
     css: String,
+    /// The syntax highlighting rules of the light and dark code themes.
+    code_css: String,
 }
 
 impl Style {
@@ -139,14 +167,14 @@ impl Style {
         Color(r, g, b, a)
     }
 
-    /// The CSS variables, as injected in the pages.
-    pub fn css(&self) -> &str {
-        &self.css
+    /// The CSS injected in the pages: variables and code colors.
+    pub fn css(&self) -> String {
+        format!("{}{}", self.css, self.code_css)
     }
 
     /// Script run before the page renders: defines the CSS variables.
     pub fn init_script(&self) -> String {
-        let css = serde_json::to_string(&self.css).unwrap_or_default();
+        let css = serde_json::to_string(&self.css()).unwrap_or_default();
         format!(
             "const style = document.createElement('style');\
              style.id = 'config';\
@@ -251,9 +279,17 @@ fn deserialize(source: &str, warnings: &mut Vec<String>) -> Result<File, String>
 }
 
 fn resolve(file: &File, warnings: &mut Vec<String>) -> Style {
-    let light = theme(file, file.light_theme.as_deref(), "paper", warnings);
-    let dark = theme(file, file.dark_theme.as_deref(), "night", warnings);
+    let (light, light_code) = theme(file, file.light_theme.as_deref(), "paper", warnings);
+    let (dark, dark_code) = theme(file, file.dark_theme.as_deref(), "night", warnings);
     let css = css(file, &light, &dark, warnings);
+    // Each code theme in its own query: a token colored by only one of them
+    // must not keep that color in the other appearance.
+    let code_css = format!(
+        "@media (prefers-color-scheme: light) {{\n{}}}\n\
+         @media (prefers-color-scheme: dark) {{\n{}}}\n",
+        highlight::theme_css(&light_code),
+        highlight::theme_css(&dark_code),
+    );
     let appearance = match file.appearance {
         Appearance::Auto => None,
         Appearance::Light => Some(Theme::Light),
@@ -265,18 +301,19 @@ fn resolve(file: &File, warnings: &mut Vec<String>) -> Style {
         light,
         dark,
         css,
+        code_css,
     }
 }
 
 /// A built-in theme, a `[themes.<name>]` table, or both: a table named after
 /// a built-in theme overrides some of its colors. Custom themes start from
-/// `paper`.
+/// `paper`. Returns the colors and the code theme.
 fn theme(
     file: &File,
     name: Option<&str>,
     default: &str,
     warnings: &mut Vec<String>,
-) -> Colors<Rgba> {
+) -> (Colors<Rgba>, String) {
     let mut name = name.unwrap_or(default);
     if built_in(name).is_none() && !file.themes.contains_key(name) {
         warnings.push(format!("unknown theme `{name}`, using `{default}`"));
@@ -284,8 +321,20 @@ fn theme(
     }
 
     let base = built_in(name).unwrap_or(PAPER);
+    let base_code = default_code_theme(name);
     let Some(custom) = file.themes.get(name) else {
-        return base;
+        return (base, base_code.to_owned());
+    };
+
+    let code = match &custom.code_theme {
+        Some(code) if highlight::has_theme(code) => code.clone(),
+        Some(code) => {
+            warnings.push(format!(
+                "`themes.{name}.code_theme`: unknown code theme `{code}`, using `{base_code}`"
+            ));
+            base_code.to_owned()
+        }
+        None => base_code.to_owned(),
     };
 
     let mut color = |key: &str, value: &Option<String>, fallback: Rgba| {
@@ -300,7 +349,7 @@ fn theme(
         })
     };
 
-    Colors {
+    let colors = Colors {
         background: color("background", &custom.background, base.background),
         text: color("text", &custom.text, base.text),
         muted: color("muted", &custom.muted, base.muted),
@@ -311,7 +360,8 @@ fn theme(
             base.code_background,
         ),
         border: color("border", &custom.border, base.border),
-    }
+    };
+    (colors, code)
 }
 
 fn css(
@@ -657,6 +707,55 @@ pub(crate) mod tests {
 
         assert!(warnings.is_empty(), "{warnings:?}");
         assert_eq!(reloaded.css, parse(source).0.css);
+    }
+
+    #[test]
+    fn code_themes_follow_the_page_themes() {
+        let (style, _) = parse(r#"light_theme = "sepia""#);
+
+        assert!(
+            style
+                .code_css
+                .contains(&highlight::theme_css("Solarized (light)"))
+        );
+        assert!(
+            style
+                .code_css
+                .contains(&highlight::theme_css("OneHalfDark"))
+        );
+    }
+
+    #[test]
+    fn code_theme_can_be_chosen_per_theme() {
+        let (style, warnings) = parse(
+            r#"
+            [themes.night]
+            code_theme = "Dracula"
+            "#,
+        );
+
+        assert!(warnings.is_empty(), "{warnings:?}");
+        assert!(style.code_css.contains(&highlight::theme_css("Dracula")));
+    }
+
+    #[test]
+    fn unknown_code_theme_falls_back_with_a_warning() {
+        let (style, warnings) = parse(
+            r#"
+            [themes.paper]
+            code_theme = "Nope"
+            "#,
+        );
+
+        assert_eq!(
+            warnings,
+            ["`themes.paper.code_theme`: unknown code theme `Nope`, using `InspiredGitHub`"]
+        );
+        assert!(
+            style
+                .code_css
+                .contains(&highlight::theme_css("InspiredGitHub"))
+        );
     }
 
     #[test]
