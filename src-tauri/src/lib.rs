@@ -3,6 +3,7 @@ mod documents;
 mod highlight;
 mod menu;
 pub mod render;
+mod settings;
 mod watch;
 
 use std::path::PathBuf;
@@ -27,7 +28,10 @@ pub fn run() {
         .on_menu_event(|app, event| menu::handle(app, &event))
         .invoke_handler(tauri::generate_handler![
             documents::get_document,
-            documents::follow_link
+            documents::follow_link,
+            settings::get_settings,
+            settings::set_setting,
+            settings::reveal_config
         ])
         .build(tauri::generate_context!())
         .expect("error while building mdr");
@@ -76,7 +80,10 @@ pub fn run() {
                 }
             }
             WindowEvent::ThemeChanged(theme) => {
-                if let Some(window) = app.get_webview_window(&label) {
+                if let Some(window) = app
+                    .get_webview_window(&label)
+                    .filter(|_| label != settings::LABEL)
+                {
                     documents::paint_background(&window, theme);
                 }
             }

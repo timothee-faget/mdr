@@ -67,6 +67,16 @@ impl SyntaxHighlighterAdapter for Highlighter {
     }
 }
 
+/// The bundled code themes, sorted.
+pub fn theme_names() -> Vec<&'static str> {
+    let mut names: Vec<&'static str> = two_face::theme::EmbeddedLazyThemeSet::theme_names()
+        .iter()
+        .map(|name| name.as_name())
+        .collect();
+    names.sort_unstable_by_key(|name| name.to_lowercase());
+    names
+}
+
 /// Whether `name` is one of the bundled code themes.
 pub fn has_theme(name: &str) -> bool {
     THEMES.theme_names().any(|known| known == name)
