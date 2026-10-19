@@ -1,3 +1,4 @@
+mod bench;
 mod config;
 mod documents;
 mod highlight;
@@ -31,7 +32,8 @@ pub fn run() {
             documents::follow_link,
             settings::get_settings,
             settings::set_setting,
-            settings::reveal_config
+            settings::reveal_config,
+            bench::bench_painted
         ])
         .build(tauri::generate_context!())
         .expect("error while building mdr");

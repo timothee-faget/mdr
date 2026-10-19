@@ -52,6 +52,12 @@ async function render({ reload }) {
 
 await render({ reload: false });
 
+// `MDR_BENCH` (scripts/bench.sh): report the first frame painted with the
+// document, two frames after it's inserted.
+if (window.__MDR_BENCH__) {
+  requestAnimationFrame(() => requestAnimationFrame(() => invoke("bench_painted")));
+}
+
 // Sent by documents.rs (restyle) when the config file changes: replaces the
 // variables injected by the init script (config.rs).
 window.__TAURI__.event.listen("config-changed", ({ payload }) => {

@@ -20,6 +20,7 @@ use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
 use crate::{
+    bench,
     config::{Config, Style},
     menu, render, settings,
     watch::Watchers,
@@ -262,6 +263,9 @@ fn build_window(app: &AppHandle, label: &str, title: &str) {
         .on_navigation(|url| url.scheme() == "tauri");
     if let Some(position) = cascade_position(app) {
         builder = builder.position(position.x, position.y);
+    }
+    if bench::enabled() {
+        builder = builder.initialization_script(bench::INIT_SCRIPT);
     }
 
     match builder.build() {
