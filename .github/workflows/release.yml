@@ -42,7 +42,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
-      - run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      - run: rustup target add aarch64-apple-darwin
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@v2
         with:
@@ -58,4 +58,5 @@ jobs:
           tauriScript: cargo tauri
           # Only attaches the .dmg: the release and its notes come from release-please.
           releaseId: ${{ steps.release.outputs.id }}
-          args: --target universal-apple-darwin
+          # Apple Silicon only: no Intel build.
+          args: --target aarch64-apple-darwin
