@@ -1,0 +1,14 @@
+---
+source: src-tauri/tests/render.rs
+expression: to_html(&markdown)
+input_file: src-tauri/tests/fixtures/malicious.md
+---
+
+<img src="x">
+<p><a rel="noopener noreferrer">click</a></p>
+<p><a rel="noopener noreferrer">raw link</a></p>
+
+
+<p>styled</p>
+<input type="text" disabled="">
+<p></p>

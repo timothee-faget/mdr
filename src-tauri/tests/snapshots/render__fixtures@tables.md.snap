@@ -1,0 +1,26 @@
+---
+source: src-tauri/tests/render.rs
+expression: to_html(&markdown)
+input_file: src-tauri/tests/fixtures/tables.md
+---
+<table>
+<thead>
+<tr>
+<th align="left">Left</th>
+<th align="center">Center</th>
+<th align="right">Right</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">a</td>
+<td align="center">b</td>
+<td align="right">c</td>
+</tr>
+<tr>
+<td align="left"><code>x</code></td>
+<td align="center"><strong>y</strong></td>
+<td align="right"><a href="#left" rel="noopener noreferrer">z</a></td>
+</tr>
+</tbody>
+</table>

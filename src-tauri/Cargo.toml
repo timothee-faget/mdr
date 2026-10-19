@@ -6,11 +6,19 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[lib]
+name = "mdr_lib"
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+ammonia = "4.2.4"
+comrak = { version = "0.56.0", default-features = false }
 tauri = { version = "2", features = [] }
+
+[dev-dependencies]
+insta = { version = "1.49.0", features = ["glob"] }
 
 [lints]
 workspace = true

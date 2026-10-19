@@ -1,0 +1,16 @@
+---
+source: src-tauri/tests/render.rs
+expression: to_html(&markdown)
+input_file: src-tauri/tests/fixtures/footnotes.md
+---
+<p>A claim<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" rel="noopener noreferrer">1</a></sup> and another<sup class="footnote-ref"><a href="#fn-note" id="fnref-note" rel="noopener noreferrer">2</a></sup>.</p>
+<section class="footnotes">
+<ol>
+<li id="fn-1">
+<p>The first footnote. <a href="#fnref-1" class="footnote-backref" rel="noopener noreferrer">↩</a></p>
+</li>
+<li id="fn-note">
+<p>A named footnote. <a href="#fnref-note" class="footnote-backref" rel="noopener noreferrer">↩</a></p>
+</li>
+</ol>
+</section>
