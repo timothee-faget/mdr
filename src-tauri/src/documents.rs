@@ -19,7 +19,7 @@ use tauri::{
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
-use crate::{config::Style, render};
+use crate::{config::Style, render, watch::Watchers};
 
 const EXTENSIONS: &[&str] = &["md", "markdown", "mdown", "mkd"];
 
@@ -78,6 +78,7 @@ pub fn open(app: &AppHandle, path: &Path) {
 
     let label = next_label();
     paths.insert(label.clone(), path.clone());
+    app.state::<Watchers>().watch(app, &label, &path);
     build_window(app, &label, &file_name(&path));
 }
 
@@ -208,6 +209,7 @@ fn show_in(app: &AppHandle, window: &WebviewWindow, path: &Path) {
     }
 
     let _ = window.set_title(&file_name(&path));
+    app.state::<Watchers>().watch(app, window.label(), &path);
     paths.insert(window.label().to_owned(), path);
     let _ = window.reload();
 }
