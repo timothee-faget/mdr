@@ -1,0 +1,143 @@
+---
+source: src-tauri/tests/render.rs
+expression: to_html(&markdown)
+input_file: src-tauri/tests/fixtures/kitchen_sink.md
+---
+<h1 id="kitchen-sink">Kitchen sink<a href="#kitchen-sink" class="anchor" rel="noopener noreferrer"></a></h1>
+<p>A paragraph of ordinary prose, long enough to wrap over several lines so that the measure, the line height and the rhythm between blocks can be judged. It has <strong>bold</strong>, <em>italic</em>, <del>strikethrough</del>, <code>inline code</code>, a <a href="https://example.com" rel="noopener noreferrer">link</a>, <kbd>⌘</kbd> <kbd>F</kbd>, and a footnote.<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" rel="noopener noreferrer">1</a></sup></p>
+<p>A very long URL that must wrap instead of widening the page: <a href="https://example.com/a/very/long/path/that/keeps/going/and/going/without/any/space/to/break/on/at/all/index.html" rel="noopener noreferrer">https://example.com/a/very/long/path/that/keeps/going/and/going/without/any/space/to/break/on/at/all/index.html</a></p>
+<h2 id="lists">Lists<a href="#lists" class="anchor" rel="noopener noreferrer"></a></h2>
+<ul>
+<li>First item</li>
+<li>Second item with a longer text that wraps onto a second line when the window is narrow enough
+<ul>
+<li>Nested item
+<ul>
+<li>Deeper item</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Third item</li>
+</ul>
+<ol>
+<li>Step one</li>
+<li>Step two
+<ol>
+<li>Sub-step</li>
+</ol>
+</li>
+<li>Step three</li>
+</ol>
+<ul>
+<li><input type="checkbox" checked="" disabled=""> Task done</li>
+<li><input type="checkbox" disabled=""> Task to do
+<ul>
+<li><input type="checkbox" disabled=""> Nested task</li>
+</ul>
+</li>
+</ul>
+<h2 id="quote">Quote<a href="#quote" class="anchor" rel="noopener noreferrer"></a></h2>
+<blockquote>
+<p>Simplicity is prerequisite for reliability.</p>
+<blockquote>
+<p>A nested quote, a little quieter.</p>
+</blockquote>
+</blockquote>
+<h2 id="code">Code<a href="#code" class="anchor" rel="noopener noreferrer"></a></h2>
+<pre><code class="language-rust">fn main() {
+    let document = std::fs::read_to_string("README.md").expect("readable file");
+    println!("{}", mdr_lib::render::to_html(&amp;document)); // a long line that has to scroll horizontally inside the block
+}
+</code></pre>
+<pre><code>An indented code block.
+</code></pre>
+<h2 id="table">Table<a href="#table" class="anchor" rel="noopener noreferrer"></a></h2>
+<table>
+<thead>
+<tr>
+<th align="left">Command</th>
+<th align="center">Shortcut</th>
+<th align="right">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Open</td>
+<td align="center">⌘O</td>
+<td align="right">Native dialog</td>
+</tr>
+<tr>
+<td align="left">Find</td>
+<td align="center">⌘F</td>
+<td align="right">Highlights every match</td>
+</tr>
+<tr>
+<td align="left">Reload</td>
+<td align="center">⌘R</td>
+<td align="right">Rarely needed, files reload by themselves</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th>very</th>
+<th>wide</th>
+<th>table</th>
+<th>with</th>
+<th>many</th>
+<th>columns</th>
+<th>that</th>
+<th>must</th>
+<th>scroll</th>
+<th>on</th>
+<th>its</th>
+<th>own</th>
+<th>instead</th>
+<th>of</th>
+<th>the</th>
+<th>page</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td>5</td>
+<td>6</td>
+<td>7</td>
+<td>8</td>
+<td>9</td>
+<td>10</td>
+<td>11</td>
+<td>12</td>
+<td>13</td>
+<td>14</td>
+<td>15</td>
+<td>16</td>
+<td>17</td>
+</tr>
+</tbody>
+</table>
+<h2 id="details">Details<a href="#details" class="anchor" rel="noopener noreferrer"></a></h2>
+<details>
+<summary>More information</summary>
+<p>Hidden content with a <a href="#kitchen-sink" rel="noopener noreferrer">link</a>.</p>
+</details>
+<hr>
+<h3 id="heading-3">Heading 3<a href="#heading-3" class="anchor" rel="noopener noreferrer"></a></h3>
+<h4 id="heading-4">Heading 4<a href="#heading-4" class="anchor" rel="noopener noreferrer"></a></h4>
+<h5 id="heading-5">Heading 5<a href="#heading-5" class="anchor" rel="noopener noreferrer"></a></h5>
+<h6 id="heading-6">Heading 6<a href="#heading-6" class="anchor" rel="noopener noreferrer"></a></h6>
+<p>Last paragraph.</p>
+<section class="footnotes">
+<ol>
+<li id="fn-1">
+<p>A footnote, set smaller and quieter at the end of the document. <a href="#fnref-1" class="footnote-backref" rel="noopener noreferrer">↩</a></p>
+</li>
+</ol>
+</section>
