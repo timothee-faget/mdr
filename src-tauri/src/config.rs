@@ -4,7 +4,13 @@
 //! A broken config never stops the app: invalid values fall back to their
 //! default with a warning on stderr.
 
-use std::{collections::HashMap, fmt::Write as _, fs, io, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fmt::Write as _,
+    fs, io,
+    path::PathBuf,
+    sync::{Arc, Mutex, PoisonError},
+};
 
 use serde::Deserialize;
 use tauri::{Theme, window::Color};
@@ -133,6 +139,11 @@ impl Style {
         Color(r, g, b, a)
     }
 
+    /// The CSS variables, as injected in the pages.
+    pub fn css(&self) -> &str {
+        &self.css
+    }
+
     /// Script run before the page renders: defines the CSS variables.
     pub fn init_script(&self) -> String {
         let css = serde_json::to_string(&self.css).unwrap_or_default();
@@ -145,27 +156,63 @@ impl Style {
     }
 }
 
-/// Reads the user's config, printing a warning for anything ignored.
-pub fn load() -> Style {
-    let source = match path().map(fs::read_to_string) {
-        Some(Ok(source)) => source,
-        Some(Err(error)) if error.kind() == io::ErrorKind::NotFound => String::new(),
-        Some(Err(error)) => {
+/// The current style, replaced when the config file changes.
+pub struct Config(Mutex<Arc<Style>>);
+
+impl Config {
+    /// Reads the user's config, printing a warning for anything ignored.
+    pub fn load() -> Self {
+        let source = read().unwrap_or_else(|error| {
             eprintln!("mdr: config: can't read it ({error}), using defaults");
             String::new()
-        }
-        None => String::new(),
-    };
+        });
+        let (style, warnings) = parse(&source);
+        print(&warnings);
+        Self(Mutex::new(Arc::new(style)))
+    }
 
-    let (style, warnings) = parse(&source);
+    pub fn current(&self) -> Arc<Style> {
+        self.0
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+
+    /// Re-reads the config after a change and returns the new style. A file
+    /// that can't be read or parsed keeps the previous style, so that a typo
+    /// while editing doesn't reset the look.
+    pub fn reload(&self) -> Option<Arc<Style>> {
+        let source = read()
+            .inspect_err(|error| eprintln!("mdr: config: can't read it ({error}), unchanged"))
+            .ok()?;
+        let (style, warnings) = reparse(&source)
+            .inspect_err(|warning| eprintln!("mdr: config: {warning}"))
+            .ok()?;
+        print(&warnings);
+
+        let style = Arc::new(style);
+        *self.0.lock().unwrap_or_else(PoisonError::into_inner) = Arc::clone(&style);
+        Some(style)
+    }
+}
+
+/// The config file's content, empty when there is none.
+fn read() -> io::Result<String> {
+    match path().map(fs::read_to_string) {
+        Some(Err(error)) if error.kind() == io::ErrorKind::NotFound => Ok(String::new()),
+        Some(result) => result,
+        None => Ok(String::new()),
+    }
+}
+
+fn print(warnings: &[String]) {
     for warning in warnings {
         eprintln!("mdr: config: {warning}");
     }
-    style
 }
 
 /// `$XDG_CONFIG_HOME/mdr/config.toml`, else `~/.config/mdr/config.toml`.
-fn path() -> Option<PathBuf> {
+pub fn path() -> Option<PathBuf> {
     let base = std::env::var_os("XDG_CONFIG_HOME")
         .filter(|dir| !dir.is_empty())
         .map(PathBuf::from)
@@ -173,44 +220,52 @@ fn path() -> Option<PathBuf> {
     Some(base.join("mdr").join("config.toml"))
 }
 
-/// Resolves a config file's content. Never fails: problems become warnings.
+/// Resolves a config file's content at launch. Never fails: an invalid file
+/// gives the defaults, other problems become warnings.
 fn parse(source: &str) -> (Style, Vec<String>) {
+    reparse(source).unwrap_or_else(|_| {
+        let error = deserialize(source, &mut Vec::new())
+            .err()
+            .unwrap_or_default();
+        let mut warnings = vec![format!("invalid file ({error}), using defaults")];
+        (resolve(&File::default(), &mut warnings), warnings)
+    })
+}
+
+/// Like `parse`, but an invalid file is an error instead of the defaults.
+fn reparse(source: &str) -> Result<(Style, Vec<String>), String> {
     let mut warnings = Vec::new();
+    let file = deserialize(source, &mut warnings)
+        .map_err(|error| format!("invalid file ({error}), keeping the previous config"))?;
+    Ok((resolve(&file, &mut warnings), warnings))
+}
 
-    let file = match toml::Deserializer::parse(source).and_then(|deserializer| {
-        serde_ignored::deserialize(deserializer, |path| {
-            warnings.push(format!("unknown key `{path}`, ignored"));
+fn deserialize(source: &str, warnings: &mut Vec<String>) -> Result<File, String> {
+    toml::Deserializer::parse(source)
+        .and_then(|deserializer| {
+            serde_ignored::deserialize(deserializer, |path| {
+                warnings.push(format!("unknown key `{path}`, ignored"));
+            })
         })
-    }) {
-        Ok(file) => file,
-        Err(error) => {
-            warnings.clear();
-            warnings.push(format!(
-                "invalid file ({}), using defaults",
-                error.message().trim()
-            ));
-            File::default()
-        }
-    };
+        .map_err(|error| error.message().trim().to_owned())
+}
 
-    let light = theme(&file, file.light_theme.as_deref(), "paper", &mut warnings);
-    let dark = theme(&file, file.dark_theme.as_deref(), "night", &mut warnings);
-    let css = css(&file, &light, &dark, &mut warnings);
+fn resolve(file: &File, warnings: &mut Vec<String>) -> Style {
+    let light = theme(file, file.light_theme.as_deref(), "paper", warnings);
+    let dark = theme(file, file.dark_theme.as_deref(), "night", warnings);
+    let css = css(file, &light, &dark, warnings);
     let appearance = match file.appearance {
         Appearance::Auto => None,
         Appearance::Light => Some(Theme::Light),
         Appearance::Dark => Some(Theme::Dark),
     };
 
-    (
-        Style {
-            appearance,
-            light,
-            dark,
-            css,
-        },
-        warnings,
-    )
+    Style {
+        appearance,
+        light,
+        dark,
+        css,
+    }
 }
 
 /// A built-in theme, a `[themes.<name>]` table, or both: a table named after
@@ -579,6 +634,22 @@ mod tests {
 
         assert_eq!(warnings.len(), 3, "{warnings:?}");
         assert_eq!(style.css, parse("").0.css);
+    }
+
+    #[test]
+    fn reload_keeps_the_previous_config_on_an_invalid_file() {
+        let error = reparse("light_theme = \"sepia").unwrap_err();
+
+        assert!(error.contains("keeping the previous config"), "{error}");
+    }
+
+    #[test]
+    fn reload_accepts_what_launch_accepts() {
+        let source = r#"light_theme = "sepia""#;
+        let (reloaded, warnings) = reparse(source).unwrap();
+
+        assert!(warnings.is_empty(), "{warnings:?}");
+        assert_eq!(reloaded.css, parse(source).0.css);
     }
 
     #[test]

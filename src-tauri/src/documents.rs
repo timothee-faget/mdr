@@ -13,13 +13,17 @@ use std::{
 
 use serde::Serialize;
 use tauri::{
-    AppHandle, LogicalPosition, Manager, State, Theme, TitleBarStyle, WebviewUrl, WebviewWindow,
-    WebviewWindowBuilder,
+    AppHandle, Emitter, LogicalPosition, Manager, State, Theme, TitleBarStyle, WebviewUrl,
+    WebviewWindow, WebviewWindowBuilder,
 };
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
-use crate::{config::Style, render, watch::Watchers};
+use crate::{
+    config::{Config, Style},
+    render,
+    watch::Watchers,
+};
 
 const EXTENSIONS: &[&str] = &["md", "markdown", "mdown", "mkd"];
 
@@ -112,8 +116,18 @@ pub fn pick(app: &AppHandle) {
 /// Paints the window background in the theme's color, so no white flashes
 /// before the page loads or when scrolling past its edges.
 pub fn paint_background(window: &WebviewWindow, theme: Theme) {
-    let color = window.state::<Style>().background(theme);
+    let color = window.state::<Config>().current().background(theme);
     let _ = window.set_background_color(Some(color));
+}
+
+/// Applies a new config to every open window: CSS variables, forced
+/// appearance and window background.
+pub fn restyle(app: &AppHandle, style: &Style) {
+    let _ = app.emit("config-changed", style.css());
+    for window in app.webview_windows().values() {
+        let _ = window.set_theme(style.appearance);
+        paint_background(window, window.theme().unwrap_or(Theme::Light));
+    }
 }
 
 /// The document shown by the calling window, or `None` for an empty window.
@@ -211,11 +225,13 @@ fn show_in(app: &AppHandle, window: &WebviewWindow, path: &Path) {
     let _ = window.set_title(&file_name(&path));
     app.state::<Watchers>().watch(app, window.label(), &path);
     paths.insert(window.label().to_owned(), path);
-    let _ = window.reload();
+    // Not `window.reload()`: the page would get the CSS frozen in its init
+    // script, outdated if the config changed since the window was created.
+    let _ = window.emit_to(window.label(), "document-changed", ());
 }
 
 fn build_window(app: &AppHandle, label: &str, title: &str) {
-    let style = app.state::<Style>();
+    let style = app.state::<Config>().current();
     let mut builder = WebviewWindowBuilder::new(app, label, WebviewUrl::default())
         .title(title)
         .inner_size(760.0, 900.0)
