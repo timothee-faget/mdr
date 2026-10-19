@@ -6,11 +6,12 @@ mdr aims to feel instant and stay light. This page records how it's measured, th
 
 | | Target | Measured (0.2.0) | |
 |---|---|---|---|
-| Startup, typical document | < 200 ms | 423 ms | ❌ |
-| Memory, typical document | < 80 MB | 96 MB | ❌ |
+| Startup, typical document | < 400 ms | 423 ms | ❌ |
+| Startup, 10,000 lines | < 600 ms | 847 ms | ❌ |
+| Memory, typical document | < 120 MB | 96 MB | ✅ |
 | `.app` size | < 15 MB | 6.2 MB | ✅ |
 
-The two missed targets are analysed below. Follow-up: [#42](https://github.com/timothee-faget/mdr/issues/42).
+The first targets were 200 ms and 80 MB. The measurements below show that macOS, Tauri and WebKit alone take ~365 ms and ~65 MB before mdr renders anything, so the targets were revised on 2026-10-19 to what a system WebView allows. Optimizations for the missed ones: [#42](https://github.com/timothee-faget/mdr/issues/42).
 
 ## Method
 
