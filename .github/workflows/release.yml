@@ -23,7 +23,7 @@ jobs:
     if: needs.release-please.outputs.created == 'true'
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@v2
