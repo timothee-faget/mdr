@@ -35,6 +35,12 @@ install: build
     rm -rf /Applications/mdr.app
     cp -R target/release/bundle/macos/mdr.app /Applications/
 
+# Regenerate the app icons from assets/icon.svg
+icon:
+    swift scripts/render-icon.swift assets/icon.svg assets/icon.png
+    cargo tauri icon assets/icon.png -o src-tauri/icons
+    cd src-tauri/icons && rm -rf android ios Square*.png StoreLogo.png icon.ico 64x64.png
+
 # Install the `mdr` command in ~/.local/bin
 install-cli:
     install -d ~/.local/bin
