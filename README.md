@@ -17,6 +17,28 @@ A minimal, read-only Markdown viewer for macOS. One file per window, a solid bac
    - open mdr, dismiss the warning, then go to **System Settings › Privacy & Security** and click **Open Anyway** next to the message about mdr;
    - or run `xattr -dr com.apple.quarantine /Applications/mdr.app` in a terminal.
 
+### Make mdr the default for Markdown files
+
+mdr appears in the Finder's **Open With** menu for `.md`, `.markdown`, `.mdown`, `.mkd` and `.mkdn` files, but doesn't take over on its own. To open every Markdown file with it:
+
+1. Select a `.md` file in the Finder and press **⌘I** (Get Info).
+2. Under **Open with**, choose **mdr**.
+3. Click **Change All…** and confirm.
+
+Repeat with a `.markdown` file if you use that extension too.
+
+### The `mdr` command
+
+Open files from the terminal: `mdr README.md`, `mdr docs/*.md`, or `mdr` alone to bring mdr to the front.
+
+```sh
+mkdir -p ~/.local/bin
+curl -fsSL https://raw.githubusercontent.com/timothee-faget/mdr/main/scripts/mdr -o ~/.local/bin/mdr
+chmod +x ~/.local/bin/mdr
+```
+
+`~/.local/bin` must be in your `PATH`. From a clone of the repository, `just install-cli` does the same.
+
 ## Development
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).

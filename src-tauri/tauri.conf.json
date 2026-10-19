@@ -19,6 +19,21 @@
     "active": true,
     "targets": ["app", "dmg"],
     "category": "Productivity",
+    "fileAssociations": [
+      {
+        "ext": ["md", "markdown"],
+        "name": "Markdown document",
+        "role": "Viewer",
+        "rank": "Alternate",
+        "contentTypes": ["net.daringfireball.markdown"]
+      },
+      {
+        "ext": ["mdown", "mkd", "mkdn"],
+        "name": "Markdown document",
+        "role": "Viewer",
+        "rank": "Alternate"
+      }
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
