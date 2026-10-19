@@ -2,7 +2,6 @@
 
 use std::{
     collections::HashMap,
-    fs,
     sync::{Mutex, PoisonError},
 };
 
@@ -12,7 +11,7 @@ use tauri::{
 };
 use tauri_plugin_opener::OpenerExt;
 
-use crate::{config, documents};
+use crate::{config, documents, settings};
 
 const OPEN: &str = "open";
 const REVEAL: &str = "reveal";
@@ -24,41 +23,12 @@ const OPEN_CONFIG: &str = "open-config";
 const FIND: &str = "find";
 const FIND_NEXT: &str = "find-next";
 const FIND_PREVIOUS: &str = "find-previous";
+const SETTINGS: &str = "settings";
 
 /// Zoom steps, as in Safari.
 const ZOOM_LEVELS: &[f64] = &[
     0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0,
 ];
-
-/// Written by File › Open Config File when there is no config yet.
-const CONFIG_TEMPLATE: &str = r##"# mdr configuration. Changes apply as soon as the file is saved.
-# Every key is optional: uncomment and edit.
-
-# appearance = "auto"        # auto | light | dark
-# light_theme = "paper"      # paper, sepia, or a [themes.<name>] below
-# dark_theme = "night"       # night, or a [themes.<name>] below
-
-# [font]
-# family = "-apple-system, system-ui, sans-serif"   # a CSS font-family list
-# mono = "ui-monospace, SF Mono, Menlo, monospace"
-# size = 16
-# line_height = 1.6
-
-# [layout]
-# max_width = "70ch"         # ch, px, em, rem or %
-
-# [themes.mine]              # unset colors come from paper
-# background = "#f7f3ea"     # #rrggbb or rgb()
-# text = "#2b2b2b"
-# muted = "#7a7468"
-# accent = "#9c4a1a"
-# code_background = "#efe9dc"
-# border = "#e2dccd"
-# code_theme = "InspiredGitHub"   # code colors, also for built-in themes:
-#   InspiredGitHub, GitHub, Solarized (light), Solarized (dark), OneHalfLight,
-#   OneHalfDark, Nord, Dracula, gruvbox-light, gruvbox-dark, Catppuccin Latte,
-#   Catppuccin Mocha, Monokai Extended, TwoDark, zenburn…
-"##;
 
 /// Menu items that need a document, disabled in empty windows.
 pub struct DocumentItems([MenuItem<Wry>; 5]);
@@ -94,29 +64,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
         Some("CmdOrCtrl+Shift+G"),
     )?;
 
-    let package = app.package_info();
-    let about = AboutMetadata {
-        name: Some(package.name.clone()),
-        version: Some(package.version.to_string()),
-        ..AboutMetadata::default()
-    };
-
-    let app_menu = Submenu::with_items(
-        app,
-        &package.name,
-        true,
-        &[
-            &PredefinedMenuItem::about(app, None, Some(about))?,
-            &separator()?,
-            &PredefinedMenuItem::services(app, None)?,
-            &separator()?,
-            &PredefinedMenuItem::hide(app, None)?,
-            &PredefinedMenuItem::hide_others(app, None)?,
-            &PredefinedMenuItem::show_all(app, None)?,
-            &separator()?,
-            &PredefinedMenuItem::quit(app, None)?,
-        ],
-    )?;
+    let app_menu = app_menu(app)?;
     let file = Submenu::with_items(
         app,
         "File",
@@ -183,10 +131,44 @@ pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     Menu::with_items(app, &[&app_menu, &file, &edit, &view, &window, &help])
 }
 
+/// mdr › About, Settings…, Services, Hide, Quit.
+fn app_menu(app: &AppHandle) -> tauri::Result<Submenu<Wry>> {
+    let separator = || PredefinedMenuItem::separator(app);
+    let item = |id: &str, text: &str, shortcut: Option<&str>| {
+        MenuItem::with_id(app, id, text, true, shortcut)
+    };
+    let package = app.package_info();
+    let about = AboutMetadata {
+        name: Some(package.name.clone()),
+        version: Some(package.version.to_string()),
+        ..AboutMetadata::default()
+    };
+
+    Submenu::with_items(
+        app,
+        &package.name,
+        true,
+        &[
+            &PredefinedMenuItem::about(app, None, Some(about))?,
+            &separator()?,
+            &item(SETTINGS, "Settings…", Some("CmdOrCtrl+,"))?,
+            &separator()?,
+            &PredefinedMenuItem::services(app, None)?,
+            &separator()?,
+            &PredefinedMenuItem::hide(app, None)?,
+            &PredefinedMenuItem::hide_others(app, None)?,
+            &PredefinedMenuItem::show_all(app, None)?,
+            &separator()?,
+            &PredefinedMenuItem::quit(app, None)?,
+        ],
+    )
+}
+
 pub fn handle(app: &AppHandle, event: &MenuEvent) {
     match event.id().as_ref() {
         OPEN => documents::pick(app),
         OPEN_CONFIG => open_config(app),
+        SETTINGS => settings::open(app),
         id => {
             let Some(window) = documents::focused_window(app) else {
                 return;
@@ -252,19 +234,13 @@ fn next_zoom(current: f64, direction: i8) -> f64 {
 /// Opens the config file in the default app, creating a commented template
 /// first if there is none.
 fn open_config(app: &AppHandle) {
-    let Some(path) = config::path() else {
-        return;
-    };
-    if !path.exists() {
-        let written = path
-            .parent()
-            .map_or(Ok(()), fs::create_dir_all)
-            .and_then(|()| fs::write(&path, CONFIG_TEMPLATE));
-        if let Err(error) = written {
-            eprintln!("mdr: can't create {}: {error}", path.display());
+    let path = match config::ensure_file() {
+        Ok(path) => path,
+        Err(error) => {
+            eprintln!("mdr: can't create the config file: {error}");
             return;
         }
-    }
+    };
     if let Err(error) = app.opener().open_path(path.to_string_lossy(), None::<&str>) {
         eprintln!("mdr: can't open {}: {error}", path.display());
     }
@@ -290,7 +266,7 @@ mod tests {
     #[test]
     fn config_template_parses_to_the_defaults() {
         assert_eq!(
-            config::tests::css_of(CONFIG_TEMPLATE),
+            config::tests::css_of(config::TEMPLATE),
             config::tests::css_of("")
         );
     }

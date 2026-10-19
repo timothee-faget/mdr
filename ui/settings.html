@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Settings</title>
+    <link rel="stylesheet" href="settings.css" />
+    <script type="module" src="settings.js"></script>
+  </head>
+  <body>
+    <form>
+      <section class="rows">
+        <label for="appearance">Appearance</label>
+        <select id="appearance">
+          <option value="auto">Automatic</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+
+        <label for="light-theme">Light theme</label>
+        <select id="light-theme" class="theme-list"></select>
+
+        <label for="dark-theme">Dark theme</label>
+        <select id="dark-theme" class="theme-list"></select>
+      </section>
+
+      <section class="colors">
+        <span></span>
+        <strong id="light-title">Light</strong>
+        <strong id="dark-title">Dark</strong>
+
+        <label>Background</label>
+        <input type="color" data-side="light" data-key="background" />
+        <input type="color" data-side="dark" data-key="background" />
+
+        <label>Text</label>
+        <input type="color" data-side="light" data-key="text" />
+        <input type="color" data-side="dark" data-key="text" />
+
+        <label>Secondary text</label>
+        <input type="color" data-side="light" data-key="muted" />
+        <input type="color" data-side="dark" data-key="muted" />
+
+        <label>Links and accents</label>
+        <input type="color" data-side="light" data-key="accent" />
+        <input type="color" data-side="dark" data-key="accent" />
+
+        <label>Code background</label>
+        <input type="color" data-side="light" data-key="code_background" />
+        <input type="color" data-side="dark" data-key="code_background" />
+
+        <label>Borders</label>
+        <input type="color" data-side="light" data-key="border" />
+        <input type="color" data-side="dark" data-key="border" />
+
+        <label>Code colors</label>
+        <select data-side="light" data-key="code_theme" class="code-themes"></select>
+        <select data-side="dark" data-key="code_theme" class="code-themes"></select>
+
+        <span></span>
+        <button type="button" data-reset="light">Reset</button>
+        <button type="button" data-reset="dark">Reset</button>
+      </section>
+
+      <section class="rows">
+        <label for="font">Font</label>
+        <input id="font" list="fonts" spellcheck="false" />
+        <datalist id="fonts">
+          <option value="-apple-system, system-ui, sans-serif">System</option>
+          <option value="ui-serif, New York, Georgia, serif">New York</option>
+          <option value="Iowan Old Style, Georgia, serif">Iowan Old Style</option>
+          <option value="Charter, Georgia, serif">Charter</option>
+          <option value="Avenir Next, sans-serif">Avenir Next</option>
+          <option value="ui-monospace, SF Mono, Menlo, monospace">SF Mono</option>
+        </datalist>
+
+        <label for="size">Text size</label>
+        <span><input id="size" type="number" min="8" max="48" step="1" /> px</span>
+
+        <label for="width">Column width</label>
+        <span class="width"><input id="width" type="range" min="40" max="120" step="5" /> <output id="width-value"></output></span>
+      </section>
+
+      <section class="footer">
+        <p id="error" role="alert"></p>
+        <button type="button" id="reveal">Reveal Config File</button>
+      </section>
+    </form>
+  </body>
+</html>

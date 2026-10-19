@@ -12,7 +12,7 @@ use std::{
     sync::{Arc, Mutex, PoisonError},
 };
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tauri::{Theme, window::Color};
 
 use crate::highlight;
@@ -184,6 +184,37 @@ impl Style {
     }
 }
 
+/// The config file created when there is none yet: every option, commented
+/// out, so the file starts with the defaults.
+pub const TEMPLATE: &str = r##"# mdr configuration. Changes apply as soon as the file is saved.
+# Every key is optional: uncomment and edit.
+
+# appearance = "auto"        # auto | light | dark
+# light_theme = "paper"      # paper, sepia, or a [themes.<name>] below
+# dark_theme = "night"       # night, or a [themes.<name>] below
+
+# [font]
+# family = "-apple-system, system-ui, sans-serif"   # a CSS font-family list
+# mono = "ui-monospace, SF Mono, Menlo, monospace"
+# size = 16
+# line_height = 1.6
+
+# [layout]
+# max_width = "70ch"         # ch, px, em, rem or %
+
+# [themes.mine]              # unset colors come from paper
+# background = "#f7f3ea"     # #rrggbb or rgb()
+# text = "#2b2b2b"
+# muted = "#7a7468"
+# accent = "#9c4a1a"
+# code_background = "#efe9dc"
+# border = "#e2dccd"
+# code_theme = "InspiredGitHub"   # code colors, also for built-in themes:
+#   InspiredGitHub, GitHub, Solarized (light), Solarized (dark), OneHalfLight,
+#   OneHalfDark, Nord, Dracula, gruvbox-light, gruvbox-dark, Catppuccin Latte,
+#   Catppuccin Mocha, Monokai Extended, TwoDark, zenburn…
+"##;
+
 /// The current style, replaced when the config file changes.
 pub struct Config(Mutex<Arc<Style>>);
 
@@ -237,6 +268,18 @@ fn print(warnings: &[String]) {
     for warning in warnings {
         eprintln!("mdr: config: {warning}");
     }
+}
+
+/// The config file's path, creating it from the template if needed.
+pub fn ensure_file() -> io::Result<PathBuf> {
+    let path = path().ok_or_else(|| io::Error::other("no home directory"))?;
+    if !path.exists() {
+        if let Some(dir) = path.parent() {
+            fs::create_dir_all(dir)?;
+        }
+        fs::write(&path, TEMPLATE)?;
+    }
+    Ok(path)
 }
 
 /// `$XDG_CONFIG_HOME/mdr/config.toml`, else `~/.config/mdr/config.toml`.
@@ -305,6 +348,21 @@ fn resolve(file: &File, warnings: &mut Vec<String>) -> Style {
     }
 }
 
+/// The theme to use: `name` if it's built in or has a table, `default` if no
+/// name is given, an error with the name if it's unknown.
+fn theme_name<'a>(
+    file: &File,
+    name: Option<&'a str>,
+    default: &'a str,
+) -> Result<&'a str, &'a str> {
+    let name = name.unwrap_or(default);
+    if built_in(name).is_some() || file.themes.contains_key(name) {
+        Ok(name)
+    } else {
+        Err(name)
+    }
+}
+
 /// A built-in theme, a `[themes.<name>]` table, or both: a table named after
 /// a built-in theme overrides some of its colors. Custom themes start from
 /// `paper`. Returns the colors and the code theme.
@@ -314,11 +372,10 @@ fn theme(
     default: &str,
     warnings: &mut Vec<String>,
 ) -> (Colors<Rgba>, String) {
-    let mut name = name.unwrap_or(default);
-    if built_in(name).is_none() && !file.themes.contains_key(name) {
-        warnings.push(format!("unknown theme `{name}`, using `{default}`"));
-        name = default;
-    }
+    let name = theme_name(file, name, default).unwrap_or_else(|unknown| {
+        warnings.push(format!("unknown theme `{unknown}`, using `{default}`"));
+        default
+    });
 
     let base = built_in(name).unwrap_or(PAPER);
     let base_code = default_code_theme(name);
@@ -526,6 +583,176 @@ impl std::fmt::Display for Rgba {
             write!(formatter, "{alpha:02x}")?;
         }
         Ok(())
+    }
+}
+
+/// The keys the Settings window may write.
+pub fn is_editable(path: &[&str]) -> bool {
+    const COLORS: [&str; 6] = [
+        "background",
+        "text",
+        "muted",
+        "accent",
+        "code_background",
+        "border",
+    ];
+    match path {
+        [key] => ["appearance", "light_theme", "dark_theme"].contains(key),
+        ["font", key] => ["family", "size", "line_height"].contains(key),
+        ["layout", "max_width"] => true,
+        ["themes", _, key] => *key == "code_theme" || COLORS.contains(key),
+        _ => false,
+    }
+}
+
+/// Sets one key of a config file's content (or removes it, with `None`),
+/// leaving the rest as written: comments, order and formatting. Missing
+/// tables are created.
+pub fn edit(
+    source: &str,
+    path: &[&str],
+    value: Option<toml_edit::Value>,
+) -> Result<String, String> {
+    let mut document: toml_edit::DocumentMut =
+        source.parse().map_err(|error: toml_edit::TomlError| {
+            format!("the config file isn't valid TOML ({})", error.message())
+        })?;
+    let (key, tables) = path.split_last().ok_or("empty key")?;
+
+    // A file of comments only, like the template: toml_edit keeps them as the
+    // document's tail and would print the first key above them.
+    let comments = document
+        .as_table()
+        .is_empty()
+        .then(|| document.trailing().as_str().unwrap_or_default().to_owned());
+    if comments.is_some() {
+        document.set_trailing("");
+    }
+
+    let mut table = document.as_table_mut();
+    for (depth, name) in tables.iter().enumerate() {
+        let item = table.entry(name).or_insert_with(|| {
+            let mut new = toml_edit::Table::new();
+            // `[themes.mine]`, not an empty `[themes]` header above it.
+            new.set_implicit(depth + 1 < tables.len());
+            toml_edit::Item::Table(new)
+        });
+        table = item
+            .as_table_mut()
+            .ok_or_else(|| format!("`{name}` isn't a table in the config file"))?;
+    }
+
+    match value {
+        Some(mut value) => match table.get_mut(key).and_then(|item| item.as_value_mut()) {
+            // Keeps a comment written after the old value.
+            Some(old) => {
+                *value.decor_mut() = old.decor().clone();
+                *old = value;
+            }
+            None => {
+                table.insert(key, toml_edit::Item::Value(value));
+            }
+        },
+        None => {
+            table.remove(key);
+        }
+    }
+
+    if let Some(comments) = comments {
+        put_first(document.as_table_mut(), comments);
+    }
+    Ok(document.to_string())
+}
+
+/// Prefixes the first line `table` prints with `text`. Implicit tables
+/// print nothing themselves: their first child does.
+fn put_first(table: &mut toml_edit::Table, text: String) {
+    if let Some((mut key, item)) = table.iter_mut().next() {
+        match item {
+            toml_edit::Item::Table(child) if child.is_implicit() => put_first(child, text),
+            toml_edit::Item::Table(child) => child.decor_mut().set_prefix(text),
+            _ => key.leaf_decor_mut().set_prefix(text),
+        }
+    }
+}
+
+/// What the Settings window shows: the config as resolved, defaults
+/// included.
+#[derive(Serialize)]
+pub struct Settings {
+    appearance: &'static str,
+    light: ThemeSettings,
+    dark: ThemeSettings,
+    /// Built-in themes, then the `[themes.<name>]` tables.
+    themes: Vec<String>,
+    code_themes: Vec<&'static str>,
+    font_family: String,
+    font_size: f32,
+    max_width: String,
+}
+
+#[derive(Serialize)]
+struct ThemeSettings {
+    name: String,
+    /// `#rrggbb`, as `<input type="color">` expects, by config key.
+    colors: HashMap<&'static str, String>,
+    code_theme: String,
+}
+
+/// The current config file, resolved for the Settings window.
+pub fn settings() -> Settings {
+    let source = read().unwrap_or_default();
+    let file = deserialize(&source, &mut Vec::new()).unwrap_or_default();
+    let ignored = &mut Vec::new();
+
+    let theme_settings = |name: Option<&str>, default: &str| {
+        let name = theme_name(&file, name, default).unwrap_or(default);
+        let (colors, code_theme) = theme(&file, Some(name), default, &mut Vec::new());
+        let hex = |Rgba(red, green, blue, _): Rgba| format!("#{red:02x}{green:02x}{blue:02x}");
+        ThemeSettings {
+            name: name.to_owned(),
+            colors: HashMap::from([
+                ("background", hex(colors.background)),
+                ("text", hex(colors.text)),
+                ("muted", hex(colors.muted)),
+                ("accent", hex(colors.accent)),
+                ("code_background", hex(colors.code_background)),
+                ("border", hex(colors.border)),
+            ]),
+            code_theme,
+        }
+    };
+
+    let mut custom: Vec<String> = file
+        .themes
+        .keys()
+        .filter(|name| built_in(name).is_none())
+        .cloned()
+        .collect();
+    custom.sort();
+    let defaults = (Font::default(), Layout::default());
+
+    Settings {
+        appearance: match file.appearance {
+            Appearance::Auto => "auto",
+            Appearance::Light => "light",
+            Appearance::Dark => "dark",
+        },
+        light: theme_settings(file.light_theme.as_deref(), "paper"),
+        dark: theme_settings(file.dark_theme.as_deref(), "night"),
+        themes: ["paper", "sepia", "night"]
+            .map(str::to_owned)
+            .into_iter()
+            .chain(custom)
+            .collect(),
+        code_themes: highlight::theme_names(),
+        font_family: font_list(&file.font.family, "", ignored)
+            .unwrap_or(&defaults.0.family)
+            .to_owned(),
+        font_size: in_range(file.font.size, 8.0..=48.0, "", ignored).unwrap_or(defaults.0.size),
+        max_width: length(&file.layout.max_width, "", ignored)
+            .unwrap_or(&defaults.1.max_width)
+            .to_owned(),
     }
 }
 
@@ -756,6 +983,98 @@ pub(crate) mod tests {
                 .code_css
                 .contains(&highlight::theme_css("InspiredGitHub"))
         );
+    }
+
+    fn edited(source: &str, path: &[&str], value: impl Into<toml_edit::Value>) -> String {
+        edit(source, path, Some(value.into())).unwrap()
+    }
+
+    #[test]
+    fn edit_keeps_comments_order_and_formatting() {
+        let source = "# My config\nappearance = \"auto\"  # follows macOS\n\n[font]\n# Reading font\nsize = 16\nfamily = \"Charter\"\n";
+
+        let output = edited(source, &["font", "size"], 18);
+
+        assert_eq!(
+            output,
+            "# My config\nappearance = \"auto\"  # follows macOS\n\n[font]\n# Reading font\nsize = 18\nfamily = \"Charter\"\n"
+        );
+    }
+
+    #[test]
+    fn edit_keeps_the_comment_after_a_replaced_value() {
+        let output = edited(
+            "appearance = \"auto\"  # follows macOS\n",
+            &["appearance"],
+            "dark",
+        );
+
+        assert_eq!(output, "appearance = \"dark\"  # follows macOS\n");
+    }
+
+    #[test]
+    fn edit_creates_missing_tables() {
+        let output = edited(
+            "appearance = \"dark\"\n",
+            &["themes", "my theme", "accent"],
+            "#ff8800",
+        );
+
+        assert_eq!(
+            output,
+            "appearance = \"dark\"\n\n[themes.\"my theme\"]\naccent = \"#ff8800\"\n"
+        );
+        assert_eq!(parse(&output).1, Vec::<String>::new());
+    }
+
+    #[test]
+    fn edit_removes_keys() {
+        let output = edit(
+            "[themes.paper]\naccent = \"#ff0000\"\ntext = \"#000000\"\n",
+            &["themes", "paper", "accent"],
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(output, "[themes.paper]\ntext = \"#000000\"\n");
+    }
+
+    #[test]
+    fn edit_on_the_template_gives_a_valid_config() {
+        let output = edited(TEMPLATE, &["light_theme"], "sepia");
+
+        assert!(output.starts_with("# mdr configuration."), "{output}");
+        let (style, warnings) = parse(&output);
+        assert!(warnings.is_empty(), "{warnings:?}");
+        assert_eq!(style.light, SEPIA);
+    }
+
+    #[test]
+    fn edit_on_the_template_keeps_its_comments_above_a_new_table() {
+        let output = edited(TEMPLATE, &["themes", "paper", "accent"], "#ff8800");
+
+        assert!(output.starts_with(TEMPLATE), "{output}");
+        assert!(
+            output.ends_with("[themes.paper]\naccent = \"#ff8800\"\n"),
+            "{output}"
+        );
+    }
+
+    #[test]
+    fn edit_refuses_invalid_toml() {
+        assert!(edit("appearance = ", &["appearance"], Some("dark".into())).is_err());
+    }
+
+    #[test]
+    fn only_schema_keys_are_editable() {
+        assert!(is_editable(&["appearance"]));
+        assert!(is_editable(&["font", "size"]));
+        assert!(is_editable(&["themes", "anything", "accent"]));
+        assert!(is_editable(&["themes", "paper", "code_theme"]));
+        assert!(!is_editable(&["colour"]));
+        assert!(!is_editable(&["font", "weight"]));
+        assert!(!is_editable(&["themes", "paper"]));
+        assert!(!is_editable(&[]));
     }
 
     #[test]

@@ -1,0 +1,115 @@
+/* A native-looking form: system font and colors, light and dark. */
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  padding: 20px 24px;
+  background: Canvas;
+  color: CanvasText;
+  font: 13px -apple-system, system-ui, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+section {
+  padding: 14px 0;
+  border-bottom: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
+}
+
+section:last-child {
+  border-bottom: 0;
+}
+
+.rows {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 10px 12px;
+  align-items: center;
+}
+
+.colors {
+  display: grid;
+  grid-template-columns: 150px 1fr 1fr;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+label {
+  text-align: right;
+}
+
+/* Grid items may shrink below their content, so menus fit their column. */
+.colors > * {
+  min-width: 0;
+}
+
+.colors select {
+  width: 100%;
+}
+
+.colors strong {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+input[type="color"] {
+  width: 44px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+  border-radius: 5px;
+  background: none;
+}
+
+select,
+#font {
+  max-width: 100%;
+  font: inherit;
+}
+
+#font {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#size {
+  width: 4em;
+  font: inherit;
+}
+
+.width {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#width {
+  flex: 1;
+}
+
+#width-value {
+  min-width: 7em;
+  color: GrayText;
+  font-variant-numeric: tabular-nums;
+}
+
+.colors button {
+  justify-self: start;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+#error {
+  margin: 0;
+  color: #d70015;
+}

@@ -21,7 +21,7 @@ use tauri_plugin_opener::OpenerExt;
 
 use crate::{
     config::{Config, Style},
-    menu, render,
+    menu, render, settings,
     watch::Watchers,
 };
 
@@ -124,9 +124,12 @@ pub fn paint_background(window: &WebviewWindow, theme: Theme) {
 /// appearance and window background.
 pub fn restyle(app: &AppHandle, style: &Style) {
     let _ = app.emit("config-changed", style.css());
-    for window in app.webview_windows().values() {
+    for (label, window) in app.webview_windows() {
         let _ = window.set_theme(style.appearance);
-        paint_background(window, window.theme().unwrap_or(Theme::Light));
+        // The Settings window keeps the system's colors.
+        if label != settings::LABEL {
+            paint_background(&window, window.theme().unwrap_or(Theme::Light));
+        }
     }
 }
 
