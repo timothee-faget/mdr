@@ -3,6 +3,12 @@ name: Release
 on:
   push:
     branches: [main]
+  # Rebuilds the .dmg of an existing release, e.g. after a failed upload.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag, e.g. v0.1.0
+        required: true
 
 permissions:
   contents: write
@@ -10,10 +16,12 @@ permissions:
 
 jobs:
   release-please:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
-      created: ${{ steps.release.outputs.release_created }}
-      tag: ${{ steps.release.outputs.tag_name }}
+      # The package lives in src-tauri/, so the outputs are prefixed with its path.
+      created: ${{ steps.release.outputs['src-tauri--release_created'] }}
+      tag: ${{ steps.release.outputs['src-tauri--tag_name'] }}
     steps:
       - id: release
         uses: googleapis/release-please-action@v5
@@ -24,10 +32,16 @@ jobs:
 
   bundle:
     needs: release-please
-    if: needs.release-please.outputs.created == 'true'
+    if: >-
+      always() && (needs.release-please.outputs.created == 'true'
+      || github.event_name == 'workflow_dispatch')
     runs-on: macos-latest
+    env:
+      TAG: ${{ inputs.tag || needs.release-please.outputs.tag }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
       - run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@v2
@@ -37,7 +51,6 @@ jobs:
         run: echo "id=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json databaseId --jq .databaseId)" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.release-please.outputs.tag }}
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
