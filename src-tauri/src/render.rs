@@ -5,8 +5,10 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-use comrak::{Options, markdown_to_html};
+use comrak::{Options, markdown_to_html_with_plugins, options::Plugins};
 use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, percent_decode_str, utf8_percent_encode};
+
+use crate::highlight::Highlighter;
 
 /// What `encodeURIComponent` leaves alone, as Tauri's `convertFileSrc` does.
 const URI_COMPONENT: &AsciiSet = &NON_ALPHANUMERIC
@@ -34,8 +36,11 @@ pub fn to_html(markdown: &str, base: &Path) -> String {
     options.extension.front_matter_delimiter = Some("---".to_owned());
     options.render.r#unsafe = true;
 
+    let mut plugins = Plugins::default();
+    plugins.render.codefence_syntax_highlighter = Some(&Highlighter);
+
     sanitizer(base)
-        .clean(&markdown_to_html(markdown, &options))
+        .clean(&markdown_to_html_with_plugins(markdown, &options, &plugins))
         .to_string()
 }
 
