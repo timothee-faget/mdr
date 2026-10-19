@@ -1,0 +1,15 @@
+---
+source: src-tauri/tests/render.rs
+expression: to_html(&markdown)
+input_file: src-tauri/tests/fixtures/code.md
+---
+<pre><code class="language-rust">fn main() {
+    println!("&lt;not html&gt;");
+}
+</code></pre>
+<pre><code>no language
+</code></pre>
+<pre><code>indented block
+</code></pre>
+<hr>
+<p>Text after a rule.</p>

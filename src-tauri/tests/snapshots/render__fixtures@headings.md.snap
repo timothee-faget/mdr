@@ -1,0 +1,13 @@
+---
+source: src-tauri/tests/render.rs
+expression: to_html(&markdown)
+input_file: src-tauri/tests/fixtures/headings.md
+---
+<h1 id="title">Title<a href="#title" class="anchor" rel="noopener noreferrer"></a></h1>
+<h2 id="section-with-code">Section with <code>code</code><a href="#section-with-code" class="anchor" rel="noopener noreferrer"></a></h2>
+<h3 id="same-name">Same name<a href="#same-name" class="anchor" rel="noopener noreferrer"></a></h3>
+<h3 id="same-name-1">Same name<a href="#same-name-1" class="anchor" rel="noopener noreferrer"></a></h3>
+<h4 id="h4">H4<a href="#h4" class="anchor" rel="noopener noreferrer"></a></h4>
+<h5 id="h5">H5<a href="#h5" class="anchor" rel="noopener noreferrer"></a></h5>
+<h6 id="h6">H6<a href="#h6" class="anchor" rel="noopener noreferrer"></a></h6>
+<h2 id="setext-heading">Setext heading<a href="#setext-heading" class="anchor" rel="noopener noreferrer"></a></h2>

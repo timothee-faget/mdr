@@ -1,0 +1,41 @@
+---
+source: src-tauri/tests/render.rs
+expression: to_html(&markdown)
+input_file: src-tauri/tests/fixtures/lists.md
+---
+<ul>
+<li>one</li>
+<li>two
+<ul>
+<li>nested
+<ul>
+<li>deeper</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>three</li>
+</ul>
+<ol>
+<li>first</li>
+<li>second
+<ol>
+<li>sub</li>
+</ol>
+</li>
+<li>third</li>
+</ol>
+<ul>
+<li><input type="checkbox" checked="" disabled=""> done</li>
+<li><input type="checkbox" disabled=""> todo
+<ul>
+<li><input type="checkbox" disabled=""> nested todo</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>A quote</p>
+<blockquote>
+<p>nested quote</p>
+</blockquote>
+</blockquote>

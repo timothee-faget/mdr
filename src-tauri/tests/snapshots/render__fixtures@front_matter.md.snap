@@ -1,0 +1,6 @@
+---
+source: src-tauri/tests/render.rs
+expression: to_html(&markdown)
+input_file: src-tauri/tests/fixtures/front_matter.md
+---
+<h1 id="visible">Visible<a href="#visible" class="anchor" rel="noopener noreferrer"></a></h1>
