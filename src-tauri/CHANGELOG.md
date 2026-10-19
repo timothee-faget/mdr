@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/timothee-faget/mdr/compare/v0.1.0...v0.2.0) (2026-10-19)
+
+
+### Features
+
+* .md file associations and the mdr command ([#40](https://github.com/timothee-faget/mdr/issues/40)) ([bd37811](https://github.com/timothee-faget/mdr/commit/bd37811352ea7e4ac83d94cd6fb93541b49e8f28))
+* hot reload of the config file ([#35](https://github.com/timothee-faget/mdr/issues/35)) ([acee3df](https://github.com/timothee-faget/mdr/commit/acee3dfe38cf26e080aeec6ce7d9c36c05f0c676))
+* in-page search with ⌘F ([#37](https://github.com/timothee-faget/mdr/issues/37)) ([0514164](https://github.com/timothee-faget/mdr/commit/0514164841e5eff316a394c0bc34473f44936eb0))
+* live reload when the file changes on disk ([#33](https://github.com/timothee-faget/mdr/issues/33)) ([ca2fca3](https://github.com/timothee-faget/mdr/commit/ca2fca3406e8f361c8a1998327461493416c7d17))
+* native menus and keyboard shortcuts ([#36](https://github.com/timothee-faget/mdr/issues/36)) ([b55ae1a](https://github.com/timothee-faget/mdr/commit/b55ae1a41743797cb41e6d7a692831c88e7c8252))
+* settings window ([#39](https://github.com/timothee-faget/mdr/issues/39)) ([262b93e](https://github.com/timothee-faget/mdr/commit/262b93ef21e6493c52a2df441bb7805b1266f14e))
+* syntax highlighting with syntect ([#38](https://github.com/timothee-faget/mdr/issues/38)) ([47ecc7b](https://github.com/timothee-faget/mdr/commit/47ecc7b52e85452096ab1df3dab00ad62045000c))
+
 ## 0.1.0 (2026-10-19)
 
 
