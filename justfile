@@ -26,8 +26,9 @@ test:
 deny:
     cargo deny check
 
-# Measure startup time, memory and size of a release build (opens mdr windows)
+# Measure render time, then startup time, memory and size of a release build (opens mdr windows)
 bench runs="10":
+    cargo test --release --test render -- --ignored
     cargo tauri build --bundles app
     scripts/bench.sh {{ runs }}
 
