@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/timothee-faget/mdr/compare/v1.0.0...v1.0.1) (2026-10-20)
+
+
+### Performance
+
+* reach the revised startup targets ([#50](https://github.com/timothee-faget/mdr/issues/50)) ([87dd747](https://github.com/timothee-faget/mdr/commit/87dd747894eedb2c92a93c31ccddd183c2e3cb72))
+
 ## [1.0.0](https://github.com/timothee-faget/mdr/compare/v0.2.0...v1.0.0) (2026-10-19)
 
 
