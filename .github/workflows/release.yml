@@ -19,9 +19,9 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
-      # The package lives in src-tauri/, so the outputs are prefixed with its path.
-      created: ${{ steps.release.outputs['src-tauri--release_created'] }}
-      tag: ${{ steps.release.outputs['src-tauri--tag_name'] }}
+      # The package is the repository root, so the outputs aren't prefixed.
+      created: ${{ steps.release.outputs.release_created }}
+      tag: ${{ steps.release.outputs.tag_name }}
     steps:
       - id: release
         uses: googleapis/release-please-action@v5
