@@ -1,0 +1,21 @@
+---
+source: src-tauri/tests/render.rs
+expression: to_html(&markdown)
+input_file: src-tauri/tests/fixtures/duplicate_footnotes.md
+---
+<h1 id="duplicate-footnotes">Duplicate footnotes<a href="#duplicate-footnotes" class="anchor" rel="noopener noreferrer"></a></h1>
+<p>A first reference<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" rel="noopener noreferrer">1</a></sup> and an unrelated one<sup class="footnote-ref"><a href="#fn-other" id="fnref-other" rel="noopener noreferrer">2</a></sup>.</p>
+<h2 id="middle">Middle<a href="#middle" class="anchor" rel="noopener noreferrer"></a></h2>
+<p>This paragraph must stay in place, outside the footnotes.</p>
+<h2 id="end">End<a href="#end" class="anchor" rel="noopener noreferrer"></a></h2>
+<p>A second reference to the same note<sup class="footnote-ref"><a href="#fn-1" id="fnref-1-2" rel="noopener noreferrer">1</a></sup>.</p>
+<section class="footnotes">
+<ol>
+<li id="fn-1">
+<p>The first definition, which wins. <a href="#fnref-1" class="footnote-backref" rel="noopener noreferrer">↩</a> <a href="#fnref-1-2" class="footnote-backref" rel="noopener noreferrer">↩<sup class="footnote-ref">2</sup></a></p>
+</li>
+<li id="fn-other">
+<p>Another note. <a href="#fnref-other" class="footnote-backref" rel="noopener noreferrer">↩</a></p>
+</li>
+</ol>
+</section>
