@@ -45,10 +45,12 @@ fn task_list_checkboxes_are_disabled() {
     assert_eq!(html.matches("disabled").count(), 2);
 }
 
-/// Run with `cargo test --release -- --ignored`.
+/// Rendering runs while the window starts (~350 ms, see docs/performance.md),
+/// so it doesn't delay the first frame as long as it ends first.
+/// Run with `cargo test --release -- --ignored`, or `just bench`.
 #[test]
 #[ignore = "timing check, only meaningful in release mode"]
-fn renders_one_megabyte_under_150ms() {
+fn renders_one_megabyte_under_350ms() {
     let chunk = fs::read_to_string("tests/fixtures/lists.md").unwrap()
         + &fs::read_to_string("tests/fixtures/tables.md").unwrap()
         + &fs::read_to_string("tests/fixtures/code.md").unwrap();
@@ -59,5 +61,5 @@ fn renders_one_megabyte_under_150ms() {
     let elapsed = start.elapsed();
 
     assert_ne!(html, "");
-    assert!(elapsed.as_millis() < 150, "rendered 1 MB in {elapsed:?}");
+    assert!(elapsed.as_millis() < 350, "rendered 1 MB in {elapsed:?}");
 }

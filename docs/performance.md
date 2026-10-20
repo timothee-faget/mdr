@@ -8,21 +8,24 @@ mdr aims to feel instant and stay light. This page records how it's measured, th
 |---|---|---|---|
 | Startup, typical document | < 400 ms | 385 ms | ✅ |
 | Startup, 10,000 lines | < 600 ms | 408 ms | ✅ |
+| Render, 1 MB of Markdown | < 350 ms | 245 ms | ✅ |
 | Memory, typical document | < 120 MB | 93 MB | ✅ |
 | `.app` size | < 15 MB | 6.2 MB | ✅ |
 
 The first targets were 200 ms and 80 MB. The measurements below show that macOS, Tauri and WebKit alone take ~350 ms and ~65 MB before mdr renders anything, so the targets were revised on 2026-10-19 to what a system WebView allows, then reached with [#42](https://github.com/timothee-faget/mdr/issues/42).
+
+Rendering runs while the window starts, so it doesn't delay the first frame as long as it takes less than the ~350 ms the window needs (see [where the time goes](#where-the-time-goes)). Its 1 MB document is dense in code (5,196 highlighted blocks); the first target, 150 ms, predates syntax highlighting ([#55](https://github.com/timothee-faget/mdr/issues/55)).
 
 The typical document is close to its limit: from one series of launches to the next, its median moves between 385 and 416 ms, with no change to mdr.
 
 ## Method
 
 ```sh
-just bench        # builds a release .app, then runs scripts/bench.sh 10
+just bench        # times rendering, builds a release .app, then runs scripts/bench.sh 10
 just bench 5      # fewer launches
 ```
 
-`scripts/bench.sh` opens real mdr windows, so don't use the Mac while it runs (about 3 minutes).
+`just bench` first runs the render timing test (`renders_one_megabyte_under_350ms` in `src-tauri/tests/render.rs`), then `scripts/bench.sh`, which opens real mdr windows, so don't use the Mac while it runs (about 3 minutes).
 
 - **Startup**: from `open -a mdr.app <file>`, what a double-click in the Finder does, to the first frame painted with the document. With `MDR_BENCH` set, the page reports that frame (two `requestAnimationFrame` after inserting the document) and mdr prints `mdr: painted` on stderr (`src-tauri/src/bench.rs`). Without the variable, none of this runs. Each document is launched 10 times; the first launch is reported apart because it pays for cold caches.
 - **Memory**: `phys_footprint` from `footprint`, which is the "Memory" column of Activity Monitor. It's summed over mdr and the WebKit processes it spawned (WebContent, GPU, Networking), 3 s after the paint.
