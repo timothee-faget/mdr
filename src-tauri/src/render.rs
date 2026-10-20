@@ -2,10 +2,14 @@
 
 use std::{
     borrow::Cow,
+    collections::HashMap,
     path::{Component, Path, PathBuf},
 };
 
-use comrak::{Options, markdown_to_html_with_plugins, options::Plugins};
+use comrak::{
+    Arena, Node, Options, format_html_with_plugins, nodes::NodeValue, options::Plugins,
+    parse_document,
+};
 use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, percent_decode_str, utf8_percent_encode};
 
 use crate::highlight::Highlighter;
@@ -39,9 +43,47 @@ pub fn to_html(markdown: &str, base: &Path) -> String {
     let mut plugins = Plugins::default();
     plugins.render.codefence_syntax_highlighter = Some(&Highlighter);
 
-    sanitizer(base)
-        .clean(&markdown_to_html_with_plugins(markdown, &options, &plugins))
-        .to_string()
+    let arena = Arena::new();
+    let root = parse_document(&arena, markdown, &options);
+    drop_duplicate_footnotes(root);
+    let mut html = String::new();
+    let _ = format_html_with_plugins(root, &options, &mut html, &plugins);
+
+    sanitizer(base).clean(&html).to_string()
+}
+
+/// comrak 0.56 keeps the last definition of a repeated footnote label and
+/// leaves the earlier ones where they are, unreferenced: the first of them
+/// then opens the footnotes section mid-page. Like GitHub, keep the first
+/// definition, in the place comrak gave the last one, and drop the others.
+fn drop_duplicate_footnotes(root: Node<'_>) {
+    let definitions: Vec<_> = root
+        .descendants()
+        .filter(|node| matches!(node.data().value, NodeValue::FootnoteDefinition(_)))
+        .collect();
+    // Comrak moves the definitions it keeps to the end of the document, so
+    // the ones it left behind come first.
+    let mut first_left_behind = HashMap::new();
+    for node in definitions {
+        let NodeValue::FootnoteDefinition(definition) = node.data().value.clone() else {
+            unreachable!()
+        };
+        // Close to comrak's label matching, which isn't public.
+        let label = definition
+            .name
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+            .to_lowercase();
+        if definition.total_references == 0 {
+            first_left_behind.entry(label).or_insert(node);
+            node.detach();
+        } else if let Some(first) = first_left_behind.remove(&label) {
+            first.data_mut().value = NodeValue::FootnoteDefinition(definition);
+            node.insert_before(first);
+            node.detach();
+        }
+    }
 }
 
 /// The local file a URL points to, relative to `base`, or `None` for a URL
