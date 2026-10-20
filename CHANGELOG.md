@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2](https://github.com/timothee-faget/mdr/compare/v1.0.1...v1.0.2) (2026-10-20)
+
+
+### Bug Fixes
+
+* keep the page in place with duplicate footnote definitions ([#54](https://github.com/timothee-faget/mdr/issues/54)) ([ab5e305](https://github.com/timothee-faget/mdr/commit/ab5e3051b8f97376a0a9886eeaefd23257fc40c5))
+* sign the app bundle ad hoc ([#58](https://github.com/timothee-faget/mdr/issues/58)) ([7521c16](https://github.com/timothee-faget/mdr/commit/7521c162c7add9cd7ea492f0a708fc8288fbaa1e))
+
 ## [1.0.1](https://github.com/timothee-faget/mdr/compare/v1.0.0...v1.0.1) (2026-10-20)
 
 
