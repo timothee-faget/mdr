@@ -683,8 +683,9 @@ pub struct Settings {
     appearance: &'static str,
     light: ThemeSettings,
     dark: ThemeSettings,
-    /// Built-in themes, then the `[themes.<name>]` tables.
-    themes: Vec<String>,
+    /// Built-in themes, then the `[themes.<name>]` tables, resolved for the
+    /// theme cards.
+    themes: Vec<ThemeSettings>,
     code_themes: Vec<&'static str>,
     font_family: String,
     font_size: f32,
@@ -744,6 +745,7 @@ pub fn settings() -> Settings {
             .map(str::to_owned)
             .into_iter()
             .chain(custom)
+            .map(|name| theme_settings(Some(&name), "paper"))
             .collect(),
         code_themes: highlight::theme_names(),
         font_family: font_list(&file.font.family, "", ignored)

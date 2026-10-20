@@ -1,12 +1,37 @@
-/* A native-looking form: system font and colors, light and dark. */
+/* In the style of macOS System Settings: grouped sections on a tinted
+   window, label on the left, control on the right. */
 :root {
   color-scheme: light dark;
+  --window: #f2f2f4;
+  --group: #ffffff;
+  --separator: rgb(0 0 0 / 0.08);
+  --control: rgb(0 0 0 / 0.06);
+  --selected: #ffffff;
+  --secondary: rgb(0 0 0 / 0.5);
+  --accent: #007aff;
+}
+
+@supports (color: -apple-system-control-accent) {
+  :root {
+    --accent: -apple-system-control-accent;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --window: #1e1e1e;
+    --group: #2a2a2b;
+    --separator: rgb(255 255 255 / 0.08);
+    --control: rgb(255 255 255 / 0.08);
+    --selected: #636366;
+    --secondary: rgb(255 255 255 / 0.55);
+  }
 }
 
 body {
   margin: 0;
-  padding: 20px 24px;
-  background: Canvas;
+  padding: 20px;
+  background: var(--window);
   color: CanvasText;
   font: 13px -apple-system, system-ui, sans-serif;
   -webkit-user-select: none;
@@ -14,72 +39,194 @@ body {
   cursor: default;
 }
 
-section {
-  padding: 14px 0;
-  border-bottom: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
-}
-
-section:last-child {
-  border-bottom: 0;
-}
-
-.rows {
-  display: grid;
-  grid-template-columns: 150px 1fr;
-  gap: 10px 12px;
-  align-items: center;
-}
-
-.colors {
-  display: grid;
-  grid-template-columns: 150px 1fr 1fr;
-  gap: 8px 12px;
-  align-items: center;
-}
-
-label {
-  text-align: right;
-}
-
-/* Grid items may shrink below their content, so menus fit their column. */
-.colors > * {
-  min-width: 0;
-}
-
-.colors select {
-  width: 100%;
-}
-
-.colors strong {
+h2 {
+  margin: 18px 10px 6px;
+  font-size: 13px;
   font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.group {
+  padding: 0 12px;
+  border: 1px solid var(--separator);
+  border-radius: 10px;
+  background: var(--group);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 24px;
+  padding: 8px 0;
+}
+
+.row[hidden] {
+  display: none;
+}
+
+.row + .row,
+.row + #sample,
+#sample + .row {
+  border-top: 1px solid var(--separator);
+}
+
+select,
+input,
+button {
+  font: inherit;
+}
+
+/* Appearance */
+
+.segmented {
+  display: flex;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--control);
+}
+
+.segmented label {
+  padding: 2px 14px;
+  border-radius: 5px;
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+}
+
+.segmented label:has(:checked) {
+  background: var(--selected);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+}
+
+.segmented label:has(:focus-visible) {
+  outline: 2px solid var(--accent);
+}
+
+/* Theme cards */
+
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 14px 0 10px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.card input {
+  position: absolute;
+  opacity: 0;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-sizing: border-box;
+  width: 96px;
+  height: 66px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--background);
+  outline: 3px solid transparent;
+  outline-offset: 1px;
+}
+
+.page i {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--text);
+}
+
+.page .heading {
+  width: 55%;
+  height: 6px;
+}
+
+.page .short {
+  width: 70%;
+  background: var(--muted);
+}
+
+.page .link {
+  width: 35%;
+  background: var(--accent);
+}
+
+.page .code {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: var(--code_background);
+}
+
+.card:has(:checked) .page {
+  outline-color: var(--accent);
+}
+
+.card:has(:focus-visible) .page {
+  outline-color: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.card:has(:checked) .name {
+  font-weight: 600;
+}
+
+/* Customize */
+
+details {
+  border-top: 1px solid var(--separator);
+}
+
+summary {
+  padding: 8px 0;
+  color: var(--secondary);
+}
+
+details[open] summary {
+  border-bottom: 1px solid var(--separator);
+}
+
+details .row {
+  padding-left: 16px;
 }
 
 input[type="color"] {
   width: 44px;
   height: 22px;
   padding: 0;
-  border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+  border: 1px solid var(--separator);
   border-radius: 5px;
   background: none;
 }
 
-select,
-#font {
-  max-width: 100%;
-  font: inherit;
+/* Text */
+
+#sample {
+  margin: 0;
+  padding: 10px 0;
+  overflow: hidden;
+  color: var(--secondary);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-#font {
-  width: 100%;
-  box-sizing: border-box;
+#font-other {
+  flex: 1;
+  max-width: 300px;
 }
 
 #size {
   width: 4em;
-  font: inherit;
 }
 
 .width {
@@ -89,24 +236,21 @@ select,
 }
 
 #width {
-  flex: 1;
+  width: 200px;
 }
 
 #width-value {
   min-width: 7em;
-  color: GrayText;
+  color: var(--secondary);
   font-variant-numeric: tabular-nums;
 }
 
-.colors button {
-  justify-self: start;
-}
-
-.footer {
+footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  margin-top: 18px;
 }
 
 #error {

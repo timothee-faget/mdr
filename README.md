@@ -70,7 +70,7 @@ chmod +x ~/.local/bin/mdr
 | ⌃⌘F | Full screen |
 | ⌘M / ⌘H / ⌘Q | Minimize / hide / quit |
 
-**File › Reveal in Finder** shows the document's file, **File › Open Config File** opens the configuration.
+**File › Show in Finder** shows the document's file, **File › Open Config File** opens the configuration.
 
 ## Configure
 
