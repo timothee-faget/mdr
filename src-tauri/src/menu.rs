@@ -52,7 +52,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
         MenuItem::with_id(app, id, text, true, shortcut)
     };
 
-    let reveal = MenuItem::with_id(app, REVEAL, "Reveal in Finder", false, None::<&str>)?;
+    let reveal = MenuItem::with_id(app, REVEAL, "Show in Finder", false, None::<&str>)?;
     let reload = MenuItem::with_id(app, RELOAD, "Reload", false, Some("CmdOrCtrl+R"))?;
     let find = MenuItem::with_id(app, FIND, "Find…", false, Some("CmdOrCtrl+F"))?;
     let find_next = MenuItem::with_id(app, FIND_NEXT, "Find Next", false, Some("CmdOrCtrl+G"))?;

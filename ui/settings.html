@@ -8,82 +8,64 @@
   </head>
   <body>
     <form>
-      <section class="rows">
-        <label for="appearance">Appearance</label>
-        <select id="appearance">
-          <option value="auto">Automatic</option>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-        </select>
-
-        <label for="light-theme">Light theme</label>
-        <select id="light-theme" class="theme-list"></select>
-
-        <label for="dark-theme">Dark theme</label>
-        <select id="dark-theme" class="theme-list"></select>
+      <section class="group">
+        <div class="row">
+          <span>Appearance</span>
+          <div class="segmented" role="radiogroup" aria-label="Appearance">
+            <label><input type="radio" name="appearance" value="auto" />Auto</label>
+            <label><input type="radio" name="appearance" value="light" />Light</label>
+            <label><input type="radio" name="appearance" value="dark" />Dark</label>
+          </div>
+        </div>
       </section>
 
-      <section class="colors">
-        <span></span>
-        <strong id="light-title">Light</strong>
-        <strong id="dark-title">Dark</strong>
+      <h2>Light theme</h2>
+      <section class="group theme" data-side="light"></section>
 
-        <label>Background</label>
-        <input type="color" data-side="light" data-key="background" />
-        <input type="color" data-side="dark" data-key="background" />
+      <h2>Dark theme</h2>
+      <section class="group theme" data-side="dark"></section>
 
-        <label>Text</label>
-        <input type="color" data-side="light" data-key="text" />
-        <input type="color" data-side="dark" data-key="text" />
-
-        <label>Secondary text</label>
-        <input type="color" data-side="light" data-key="muted" />
-        <input type="color" data-side="dark" data-key="muted" />
-
-        <label>Links and accents</label>
-        <input type="color" data-side="light" data-key="accent" />
-        <input type="color" data-side="dark" data-key="accent" />
-
-        <label>Code background</label>
-        <input type="color" data-side="light" data-key="code_background" />
-        <input type="color" data-side="dark" data-key="code_background" />
-
-        <label>Borders</label>
-        <input type="color" data-side="light" data-key="border" />
-        <input type="color" data-side="dark" data-key="border" />
-
-        <label>Code colors</label>
-        <select data-side="light" data-key="code_theme" class="code-themes"></select>
-        <select data-side="dark" data-key="code_theme" class="code-themes"></select>
-
-        <span></span>
-        <button type="button" data-reset="light">Reset</button>
-        <button type="button" data-reset="dark">Reset</button>
+      <h2>Text</h2>
+      <section class="group">
+        <div class="row">
+          <label for="font">Font</label>
+          <select id="font"></select>
+        </div>
+        <div class="row" id="font-other-row" hidden>
+          <label for="font-other">Font list</label>
+          <input id="font-other" spellcheck="false" placeholder="Charter, Georgia, serif" />
+        </div>
+        <p id="sample">The quick brown fox jumps over the lazy dog.</p>
+        <div class="row">
+          <label for="size">Text size</label>
+          <span><input id="size" type="number" min="8" max="48" step="1" /> px</span>
+        </div>
+        <div class="row">
+          <label for="width">Column width</label>
+          <span class="width"><input id="width" type="range" min="40" max="120" step="5" /> <output id="width-value"></output></span>
+        </div>
       </section>
 
-      <section class="rows">
-        <label for="font">Font</label>
-        <input id="font" list="fonts" spellcheck="false" />
-        <datalist id="fonts">
-          <option value="-apple-system, system-ui, sans-serif">System</option>
-          <option value="ui-serif, New York, Georgia, serif">New York</option>
-          <option value="Iowan Old Style, Georgia, serif">Iowan Old Style</option>
-          <option value="Charter, Georgia, serif">Charter</option>
-          <option value="Avenir Next, sans-serif">Avenir Next</option>
-          <option value="ui-monospace, SF Mono, Menlo, monospace">SF Mono</option>
-        </datalist>
-
-        <label for="size">Text size</label>
-        <span><input id="size" type="number" min="8" max="48" step="1" /> px</span>
-
-        <label for="width">Column width</label>
-        <span class="width"><input id="width" type="range" min="40" max="120" step="5" /> <output id="width-value"></output></span>
-      </section>
-
-      <section class="footer">
+      <footer>
         <p id="error" role="alert"></p>
-        <button type="button" id="reveal">Reveal Config File</button>
-      </section>
+        <button type="button" id="show-config">Show Config File</button>
+      </footer>
     </form>
+
+    <!-- Filled in for each side, light and dark. -->
+    <template id="theme">
+      <div class="cards" role="radiogroup"></div>
+      <details>
+        <summary>Customize <span class="theme-name"></span></summary>
+        <div class="row"><label>Background</label><input type="color" data-key="background" /></div>
+        <div class="row"><label>Text</label><input type="color" data-key="text" /></div>
+        <div class="row"><label>Secondary text</label><input type="color" data-key="muted" /></div>
+        <div class="row"><label>Links and accents</label><input type="color" data-key="accent" /></div>
+        <div class="row"><label>Code background</label><input type="color" data-key="code_background" /></div>
+        <div class="row"><label>Borders</label><input type="color" data-key="border" /></div>
+        <div class="row"><label>Code colors</label><select data-key="code_theme"></select></div>
+        <div class="row"><span></span><button type="button" class="reset">Reset to Defaults</button></div>
+      </details>
+    </template>
   </body>
 </html>
