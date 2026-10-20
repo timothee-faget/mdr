@@ -23,6 +23,31 @@ document.addEventListener("click", (event) => {
   }
 });
 
+// Inserts what fills the first two screens, then the rest once they're on
+// screen, two frames later: WebKit takes ~300 ms to lay out a 10,000-line
+// page, which would delay the first frame. The rest goes below the view, so
+// nothing moves.
+async function insertFirstScreens(html) {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  const blocks = template.content;
+  main.replaceChildren();
+  while (blocks.firstChild && main.offsetHeight < 2 * innerHeight) {
+    for (let i = 0; i < 20 && blocks.firstChild; i++) main.append(blocks.firstChild);
+  }
+  if (!blocks.firstChild) return;
+  const shown = main.lastChild;
+  await new Promise((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve))),
+  );
+  // Unless a live reload replaced the page in the meantime.
+  if (shown.isConnected) main.append(blocks);
+}
+
+function rendered() {
+  document.dispatchEvent(new Event("document-rendered"));
+}
+
 async function render({ reload }) {
   let doc;
   try {
@@ -43,11 +68,14 @@ async function render({ reload }) {
 
   document.title = doc.title;
   // Sanitized in Rust (render.rs).
-  main.innerHTML = doc.html;
-
-  // Edits elsewhere in the file don't move the view; at the end, follow it.
-  if (reload) page.scrollTop = atEnd ? page.scrollHeight : top;
-  document.dispatchEvent(new Event("document-rendered"));
+  if (reload) {
+    main.innerHTML = doc.html;
+    // Edits elsewhere in the file don't move the view; at the end, follow it.
+    page.scrollTop = atEnd ? page.scrollHeight : top;
+    rendered();
+  } else {
+    insertFirstScreens(doc.html).then(rendered);
+  }
 }
 
 await render({ reload: false });

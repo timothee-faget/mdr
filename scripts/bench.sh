@@ -20,8 +20,13 @@ mkdir -p "$work/config"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cp "$root/README.md" "$work/readme.md"
 : > "$work/long.md"
+copies=0
 while [ "$(wc -l < "$work/long.md")" -lt 10000 ]; do
-    cat "$root/src-tauri/tests/fixtures/kitchen_sink.md" "$root/src-tauri/tests/fixtures/languages.md" >> "$work/long.md"
+    copies=$((copies + 1))
+    # One footnote label per copy: comrak moves everything between two
+    # definitions of the same label into the footnotes.
+    sed "s/\[^1\]/[^$copies]/g" "$root/src-tauri/tests/fixtures/kitchen_sink.md" >> "$work/long.md"
+    cat "$root/src-tauri/tests/fixtures/languages.md" >> "$work/long.md"
 done
 
 wait_for_exit() {
