@@ -1,6 +1,6 @@
 [package]
 name = "mdr"
-version = "1.0.1"
+version = "1.0.2"
 description = "A minimal, read-only Markdown viewer for macOS"
 edition.workspace = true
 license.workspace = true
