@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/timothee-faget/mdr/compare/v1.0.2...v1.1.0) (2026-10-20)
+
+
+### Features
+
+* redesign the Settings window ([#60](https://github.com/timothee-faget/mdr/issues/60)) ([163451a](https://github.com/timothee-faget/mdr/commit/163451a1d2593aee5208a396b8ad6cc550e98cca))
+
 ## [1.0.2](https://github.com/timothee-faget/mdr/compare/v1.0.1...v1.0.2) (2026-10-20)
 
 
