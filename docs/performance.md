@@ -4,14 +4,16 @@ mdr aims to feel instant and stay light. This page records how it's measured, th
 
 ## Targets
 
-| | Target | Measured (0.2.0) | |
+| | Target | Measured | |
 |---|---|---|---|
-| Startup, typical document | < 400 ms | 423 ms | ❌ |
-| Startup, 10,000 lines | < 600 ms | 847 ms | ❌ |
-| Memory, typical document | < 120 MB | 96 MB | ✅ |
+| Startup, typical document | < 400 ms | 385 ms | ✅ |
+| Startup, 10,000 lines | < 600 ms | 408 ms | ✅ |
+| Memory, typical document | < 120 MB | 93 MB | ✅ |
 | `.app` size | < 15 MB | 6.2 MB | ✅ |
 
-The first targets were 200 ms and 80 MB. The measurements below show that macOS, Tauri and WebKit alone take ~365 ms and ~65 MB before mdr renders anything, so the targets were revised on 2026-10-19 to what a system WebView allows. Optimizations for the missed ones: [#42](https://github.com/timothee-faget/mdr/issues/42).
+The first targets were 200 ms and 80 MB. The measurements below show that macOS, Tauri and WebKit alone take ~350 ms and ~65 MB before mdr renders anything, so the targets were revised on 2026-10-19 to what a system WebView allows, then reached with [#42](https://github.com/timothee-faget/mdr/issues/42).
+
+The typical document is close to its limit: from one series of launches to the next, its median moves between 385 and 416 ms, with no change to mdr.
 
 ## Method
 
@@ -27,19 +29,21 @@ just bench 5      # fewer launches
 - **Documents**, copied to a temporary folder outside `~/Documents` (no privacy prompt), with an empty config:
   - *empty*: no file, the empty window;
   - *readme*: this repository's `README.md` (~60 lines);
-  - *long*: `kitchen_sink.md` and `languages.md` repeated to 10,010 lines, including ~180 highlighted code blocks.
+  - *long*: `kitchen_sink.md` and `languages.md` repeated to 10,010 lines, including ~180 highlighted code blocks. Each copy gets its own footnote label: comrak moves everything between two definitions of the same label into the footnotes, which made the page one huge list item until #42.
 
 ## Results
 
-mdr 0.2.0, macOS 26.5.2, Apple M4 Pro, 2026-10-19.
+mdr 1.0.0 with #42, macOS 26.5.2, Apple M4 Pro, 2026-10-20.
 
 | Document | First launch | Median | Min | Max | Memory |
 |---|---|---|---|---|---|
-| empty | 697 ms | 382 ms | 365 ms | 402 ms | 108 MB |
-| readme | 402 ms | 423 ms | 391 ms | 468 ms | 96 MB |
-| long | 861 ms | 847 ms | 812 ms | 867 ms | 281 MB |
+| empty | 358 ms | 353 ms | 340 ms | 741 ms | 107 MB |
+| readme | 384 ms | 385 ms | 369 ms | 403 ms | 93 MB |
+| long | 414 ms | 408 ms | 386 ms | 426 ms | 310 MB |
 
 App size: 6.2 MB (`.app`), 6.0 MB (binary).
+
+Before #42 (1.0.0), in the same session: empty 349 ms, readme 388 ms, long 830 ms (medians).
 
 ## Where the time goes
 
@@ -48,17 +52,18 @@ Timestamps from a temporarily instrumented build, in ms after `open`, warm cache
 | Step | readme | long |
 |---|---|---|
 | macOS starts the process (`open` → `main`) | 85 | 85 |
-| Tauri setup (`main` → `Ready`: menu, plugins, event loop) | 110 | 110 |
-| Window and WKWebView created | 70 | 70 |
-| WebKit page starts | 45 | 45 |
-| HTML, CSS and JS loaded, script running | 55 | 55 |
-| Rendering in Rust (`get_document`: comrak, ammonia, syntect) | 3 | 117 |
-| HTML sent to the page and inserted | 0 | 35 |
-| Layout and first paint | 34 | 315 |
-| **Total** | **~400** | **~840** |
+| Tauri builds the app (event loop, plugins, menu) | 65 | 65 |
+| AppKit finishes launching (→ `Ready`) | 45 | 45 |
+| Window and WKWebView created | 65 | 65 |
+| WebKit starts the page | 45 | 45 |
+| Page loaded, scripts waiting for the main thread | 50 | 50 |
+| Document received and first screens inserted | 8 | 45 |
+| Two frames to the paint | 32 | 18 |
+| **Total** | **~395** | **~420** |
 
-- About 365 ms are spent before mdr has rendered anything, whatever the document. They're shared by macOS, Tauri and WebKit. The largest step mdr may control is `main` → `Ready` (110 ms).
-- On long documents, WebKit's layout of the whole page dominates (315 ms), followed by syntax highlighting (part of the 117 ms in Rust).
+- About 350 ms are spent before the page's script runs, whatever the document. They're shared by macOS, Tauri, WebKit and the window manager: the page's scripts wait for the app's main thread, which is busy until the window is placed (here by AeroSpace, a tiling window manager). mdr's own setup takes 7 ms of it: the config (1 ms) and the menu (6 ms).
+- The document is rendered in Rust (comrak, ammonia, syntect: 3 ms for the README, 130 ms for 10,000 lines) while the window starts, so it's ready when the page asks for it.
+- The page inserts what fills its first two screens, then the rest once they're painted. A long document is then laid out by WebKit without delaying the first frame. On 10,000 lines, the 45 ms are spent sending the 2.3 MB of HTML (20 ms), parsing it (17 ms) and inserting the first screens.
 
 ## Where the memory goes
 
@@ -68,5 +73,7 @@ Timestamps from a temporarily instrumented build, in ms after `open`, warm cache
 | WebKit WebContent | 56 MB | 38 MB | 181 MB |
 | WebKit GPU | 21 MB | 19 MB | 23 MB |
 | WebKit Networking | 5 MB | 6 MB | 6 MB |
+
+Measured on 0.2.0, with the old *long* document (281 MB in total, 310 MB now).
 
 The WebKit processes alone take about 65 MB for the smallest page. That's the cost of the system WebView, so 80 MB in total isn't reachable while mdr renders through it. On long documents, WebContent grows with the DOM (every highlighted token is a `<span>`), and mdr keeps syntect's grammars loaded after the first code block.

@@ -22,6 +22,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(documents::Paths::default())
+        .manage(documents::Renders::default())
         .manage(config::Config::load())
         .manage(watch::Watchers::default())
         .manage(menu::Zoom::default())
@@ -75,6 +76,7 @@ pub fn run() {
                 app.state::<watch::Watchers>().stop(&label);
                 app.state::<menu::Zoom>().forget(&label);
                 app.state::<documents::Paths>().remove(&label);
+                app.state::<documents::Renders>().remove(&label);
             }
             WindowEvent::Focused(true) => {
                 if let Some(window) = app.get_webview_window(&label) {

@@ -14,7 +14,7 @@ use std::{
 use serde::Serialize;
 use tauri::{
     AppHandle, Emitter, LogicalPosition, Manager, State, Theme, TitleBarStyle, WebviewUrl,
-    WebviewWindow, WebviewWindowBuilder,
+    WebviewWindow, WebviewWindowBuilder, async_runtime::JoinHandle,
 };
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
@@ -60,6 +60,34 @@ impl Paths {
     }
 }
 
+/// Documents rendered while their window starts, by window label: a long
+/// document takes about as long to render as the web view takes to start,
+/// so the two overlap instead of following each other.
+#[derive(Default)]
+pub struct Renders(Mutex<HashMap<String, Render>>);
+
+type Render = JoinHandle<Result<String, String>>;
+
+impl Renders {
+    fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<String, Render>> {
+        self.0.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    fn start(&self, label: String, path: PathBuf) {
+        let render = tauri::async_runtime::spawn_blocking(move || render_file(&path));
+        self.lock().insert(label, render);
+    }
+
+    fn take(&self, label: &str) -> Option<Render> {
+        self.lock().remove(label)
+    }
+
+    /// Forgets the render of a window closed before its page asked for it.
+    pub fn remove(&self, label: &str) {
+        self.take(label);
+    }
+}
+
 #[derive(Serialize)]
 pub struct Document {
     title: String,
@@ -84,6 +112,7 @@ pub fn open(app: &AppHandle, path: &Path) {
     let label = next_label();
     paths.insert(label.clone(), path.clone());
     app.state::<Watchers>().watch(app, &label, &path);
+    app.state::<Renders>().start(label.clone(), path.clone());
     build_window(app, &label, &file_name(&path));
 }
 
@@ -135,16 +164,21 @@ pub fn restyle(app: &AppHandle, style: &Style) {
 }
 
 /// The document shown by the calling window, or `None` for an empty window.
+/// The first call gets the render started with the window, the next ones
+/// (live reload) render the file again.
 #[tauri::command]
 pub async fn get_document(
     window: WebviewWindow,
     paths: State<'_, Paths>,
+    renders: State<'_, Renders>,
 ) -> Result<Option<Document>, String> {
     let Some(path) = paths.get(window.label()) else {
         return Ok(None);
     };
-    let title = file_name(&path);
-    let bytes = fs::read(&path).map_err(|error| format!("Can't open {title}: {error}"))?;
+    let html = match renders.take(window.label()) {
+        Some(render) => render.await.unwrap_or_else(|_| render_file(&path))?,
+        None => render_file(&path)?,
+    };
     let base = base_dir(&path);
 
     // Lets the page load the document's images, see `render::image_source`.
@@ -153,10 +187,19 @@ pub async fn get_document(
     }
 
     Ok(Some(Document {
-        html: render::to_html(&String::from_utf8_lossy(&bytes), base),
-        title,
+        html,
+        title: file_name(&path),
         path,
     }))
+}
+
+fn render_file(path: &Path) -> Result<String, String> {
+    let bytes =
+        fs::read(path).map_err(|error| format!("Can't open {}: {error}", file_name(path)))?;
+    Ok(render::to_html(
+        &String::from_utf8_lossy(&bytes),
+        base_dir(path),
+    ))
 }
 
 /// Follows a link clicked in the document. Web and mail links open in the
